@@ -1,0 +1,41 @@
+- เปลี่ยน  director
+    จาก parse and Evaluate
+    package strategy.ast;
+
+    public enum Direction {
+        UP, DOWN, UPLEFT, UPRIGHT, DOWNLEFT, DOWNRIGHT
+    }
+
+    จาก game
+    public enum Direction {
+        UP(-1,0),
+        UPRIGHT(-1,1),
+        DOWNRIGHT(0,1),
+        DOWN(1,0),
+        DOWNLEFT(1,-1),
+        UPLEFT(0,-1);
+
+        public final int dr;
+        public final int dc;
+    }
+
+(ตอนนี้ไม่มี done)
+
+- demo
+    -   ไม่มีการใช้ if เพราะ ของ parse ไม่มี if condition just +/-/*//
+    -   ตอนนี้ลองเทสตามที่มาใน doc move shoot ต่างๆ ตาม gameAPI(apple)
+    -   before in demo cant output (พัง / integration fail)
+        Strategy language ใช้ opponent และ then
+        แต่ Parser รองรับเฉพาะ NUMBER และ arithmetic expression
+        ทำให้ strategy ไม่สามารถ evaluate ได้ → game ใช้ไม่ได้
+
+- flow (step working)
+    Strategy Text
+       ↓
+    Parser → AST
+       ↓
+    Evaluator
+       ↓ calls
+    GameAPI (RealGameAPI)
+       ↓
+    Game State Changed
