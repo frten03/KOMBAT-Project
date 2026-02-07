@@ -3,7 +3,7 @@ public class Minion {
     private int col;
     private int hp;
     private int defense;
-    private Player owner;
+    private final Player owner;
 
     public Minion(int row, int col, int hp, int defense, Player owner) {
         if (hp <= 0) {
@@ -48,4 +48,15 @@ public class Minion {
         int real = Math.max(0, dmg - defense);
         hp -= real;
     }
+
+    @Override
+    public String toString() {
+        return "Minion{" +
+                "pos=(" + row + "," + col + ")" +
+                ", hp=" + hp +
+                ", def=" + defense +
+                ", ownerBudget=" + owner.getBudget() +
+                '}';
+    }
+
 }

@@ -1,6 +1,6 @@
 public class GameLogic {
 
-    private Grid board;
+    private final Grid board;
 
     public GameLogic(Grid board) {
         this.board = board;
@@ -11,48 +11,51 @@ public class GameLogic {
         int nr = m.getRow() + dir.dr;
         int nc = m.getCol() + dir.dc;
 
-        if (!board.inBounds(nr, nc))
-            return false;
-        if (board.isOccupied(nr, nc))
-            return false;
+        if (!board.inBounds(nr, nc)) return false;
+        if (board.isOccupied(nr, nc)) return false;
 
         return true;
     }
 
-    public void moveMinion(Minion m, Direction dir) {
-        m.getOwner().decreaseBudget(1);
+    public boolean moveMinion(Minion minion, Direction dir) {
+        Player p = minion.getOwner();
 
-        if (!canMove(m, dir))
-            return;
+        if (p.spendBudget(1)) return false;
 
-        int nr = m.getRow() + dir.dr;
-        int nc = m.getCol() + dir.dc;
-        board.moveMinion(m, nr, nc);
+        int nr = minion.getRow() + dir.dr;
+        int nc = minion.getCol() + dir.dc;
+
+        if (!board.inBounds(nr, nc)) return true;
+        if (board.isOccupied(nr, nc)) return true;
+
+        board.moveMinion(minion, nr, nc);
+        return true;
     }
 
+
     // ===== combat =====
-    public void shoot(Minion attacker, Direction dir, long cost) {
+    public boolean shoot(Minion attacker, Direction dir, long cost) {
         Player p = attacker.getOwner();
-        if (p.getBudget() < cost)
-            return;
+
+        if (p.spendBudget(cost)) return false;
 
         int tr = attacker.getRow() + dir.dr;
         int tc = attacker.getCol() + dir.dc;
 
-        if (!board.inBounds(tr, tc))
-            return;
+        if (!board.inBounds(tr, tc)) return true;
 
         Minion target = board.getMinion(tr, tc);
-        if (target == null)
-            return;
+        if (target == null) return true;
 
-        p.decreaseBudget(cost);
         target.takeDamage((int) cost);
 
         if (target.getHp() <= 0) {
             board.removeMinion(target);
         }
+
+        return true;
     }
+
 
     public Minion getOpponent(Minion self, Direction dir) {
         int tr = self.getRow() + dir.dr;

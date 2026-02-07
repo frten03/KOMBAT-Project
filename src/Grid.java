@@ -3,7 +3,7 @@ import java.util.Map;
 
 public class Grid {
     private static final int SIZE = 8;
-    private Map<String, Minion> cells = new HashMap<>();
+    private final Map<String, Minion> cells = new HashMap<>();
 
     private String key(int r, int c) {
         return r + "," + c;

@@ -17,6 +17,12 @@ public class Player {
         return budget;
     }
 
+    public boolean spendBudget(long cost) {
+        if (budget < cost) return true;
+        budget -= cost;
+        return false;
+    }
+
     public void decreaseBudget(long amount) {
         budget -= amount;
         if (budget < 0)

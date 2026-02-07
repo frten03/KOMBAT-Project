@@ -1,4 +1,4 @@
-public class EvaluatorContext implements InterfaceGameAPI {
+public class EvaluatorContext implements GameAPI {
 
     private Minion self;
     private GameLogic logic;
@@ -14,13 +14,13 @@ public class EvaluatorContext implements InterfaceGameAPI {
     }
 
     @Override
-    public void moveMinion(Direction dir) {
-        logic.moveMinion(self, dir);
+    public boolean moveMinion(Direction dir) {
+        return logic.moveMinion(self, dir);
     }
 
     @Override
-    public void shoot(Direction dir, long cost) {
-        logic.shoot(self, dir, cost);
+    public boolean shoot(Direction dir, long cost) {
+        return logic.shoot(self, dir, cost);
     }
 
     @Override
