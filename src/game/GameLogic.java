@@ -1,3 +1,7 @@
+package game;
+
+import strategy.ast.Direction;
+
 public class GameLogic {
 
     private final Grid board;

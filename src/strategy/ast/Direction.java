@@ -1,3 +1,5 @@
+package strategy.ast;
+
 public enum Direction {
     UP(-1, 0),
     UPRIGHT(-1, +1),

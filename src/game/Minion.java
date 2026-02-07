@@ -1,3 +1,5 @@
+package game;
+
 public class Minion {
     private int row;
     private int col;
@@ -51,7 +53,7 @@ public class Minion {
 
     @Override
     public String toString() {
-        return "Minion{" +
+        return "game.Minion{" +
                 "pos=(" + row + "," + col + ")" +
                 ", hp=" + hp +
                 ", def=" + defense +

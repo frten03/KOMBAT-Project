@@ -3,7 +3,7 @@ game state
   - Game State Structure
   - Representation Invariants
 - Turn Flow Diagram
-- Minion Strategy
+- game.Minion Strategy
 
 link figjam ->
 https://www.figma.com/board/e2xFkxVmbaJSuDiq0mBfJJ/Flow-Draft?node-id=3-2&t=93UtDTUfjv48xbu9-1
