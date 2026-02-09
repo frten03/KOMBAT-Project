@@ -7,56 +7,57 @@ import strategy.tokenizer.Tokenizer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class EvaluatorTest {
+public class EvaluatorTest {
 
-    @Test
-    void executeMoveAndShoot() {
-        String src = """
-        {
-            move up;
-            shoot down 10;
-        }
-        """;
-
-        EvalContext ctx = new EvalContext(new DummyGameAPI());
+    private EvalContext run(String src) {
         Parser p = new Parser(new Tokenizer(src));
         Statement s = p.parseStatement();
-
-        assertDoesNotThrow(() -> s.eval(ctx));
-        assertFalse(ctx.isEvaluationStopped());
-    }
-
-    @Test
-    void doneStopsExecution() {
-        String src = """
-        {
-            move up;
-            done;
-            move down;
-        }
-        """;
-
         EvalContext ctx = new EvalContext(new DummyGameAPI());
-        Parser p = new Parser(new Tokenizer(src));
-        Statement s = p.parseStatement();
-
         s.eval(ctx);
-        assertTrue(ctx.isEvaluationStopped());
+        return ctx;
     }
 
     @Test
-    void whileLoopDoesNotInfinite() {
-        String src = """
-        {
-            while 1 {
-                move up;
-            }
-        }
-        """;
+    void testMoveExecutes() {
+        EvalContext ctx = run("move up;");
+        assertFalse(ctx.isDone());
+    }
 
-        EvalContext ctx = new EvalContext(new DummyGameAPI());
-        Parser p = new Parser(new Tokenizer(src));
+    @Test
+    void testShootExecutes() {
+        EvalContext ctx = run("shoot down 10;");
+        assertFalse(ctx.isDone());
+    }
+
+    @Test
+    void testDoneStops() {
+        EvalContext ctx = run("done;");
+        assertTrue(ctx.isDone());
+    }
+
+    @Test
+    void testIfTrueExecutes() {
+        EvalContext ctx = run("if 1 then done; else move up;");
+        assertTrue(ctx.isDone());
+    }
+
+    @Test
+    void testIfFalseSkips() {
+        EvalContext ctx = run("if 0 then move up; else done;");
+        assertTrue(ctx.isDone());
+    }
+
+    @Test
+    void testWhileTerminates() {
+        EvalContext ctx = run("while 0 move up;");
+        assertFalse(ctx.isDone());
+    }
+
+    @Test
+    void testWhileLimit() {
+        Parser p = new Parser(new Tokenizer("while 1 move up;"));
         Statement s = p.parseStatement();
+        EvalContext ctx = new EvalContext(new DummyGameAPI());
 
         assertDoesNotThrow(() -> s.eval(ctx));
     }

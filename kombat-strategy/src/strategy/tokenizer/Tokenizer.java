@@ -58,19 +58,32 @@ public class Tokenizer {
         while (pos < src.length() && Character.isLetter(src.charAt(pos)))
             pos++;
         String s = src.substring(start, pos);
+
         return switch (s) {
             case "if" -> new Token(TokenType.IF, s);
+            case "then" -> new Token(TokenType.THEN, s);
+            case "else" -> new Token(TokenType.ELSE, s);
+
             case "while" -> new Token(TokenType.WHILE, s);
             case "done" -> new Token(TokenType.DONE, s);
             case "move" -> new Token(TokenType.MOVE, s);
             case "shoot" -> new Token(TokenType.SHOOT, s);
+
+            // ===== INFO EXPRESSIONS =====
+            case "opponent" -> new Token(TokenType.OPPONENT, s);
+            case "nearby" -> new Token(TokenType.NEARBY, s);
+            case "ally" -> new Token(TokenType.ALLY, s);
+
+            // ===== DIRECTION =====
             case "up" -> new Token(TokenType.UP, s);
             case "down" -> new Token(TokenType.DOWN, s);
             case "upleft" -> new Token(TokenType.UPLEFT, s);
             case "upright" -> new Token(TokenType.UPRIGHT, s);
             case "downleft" -> new Token(TokenType.DOWNLEFT, s);
             case "downright" -> new Token(TokenType.DOWNRIGHT, s);
+
             default -> new Token(TokenType.IDENT, s);
         };
     }
+
 }

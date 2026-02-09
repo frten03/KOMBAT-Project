@@ -12,6 +12,7 @@ public class MoveStmt extends ActionStmt {
 
     @Override
     public void eval(EvalContext ctx) {
+        if (ctx.isDone()) return;
         ctx.api.move(dir);
     }
 }

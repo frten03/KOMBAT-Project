@@ -8,14 +8,38 @@ import strategy.tokenizer.Tokenizer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ExpressionTest {
+public class ExpressionTest {
+
+    private long eval(String expr) {
+        Parser p = new Parser(new Tokenizer(expr));
+        Expression e = p.parseExpression();
+        return e.eval(new EvalContext(new DummyGameAPI()));
+    }
 
     @Test
-    void operatorPrecedence() {
-        Parser p = new Parser(new Tokenizer("10 + 5 * 2"));
-        Expression e = p.parseExpression();
+    void testNumber() {
+        assertEquals(5, eval("5"));
+    }
 
-        long result = e.eval(new EvalContext(new DummyGameAPI()));
-        assertEquals(20, result);
+    @Test
+    void testAddSub() {
+        assertEquals(7, eval("3+4"));
+        assertEquals(1, eval("5-4"));
+    }
+
+    @Test
+    void testMulDiv() {
+        assertEquals(12, eval("3*4"));
+        assertEquals(5, eval("10/2"));
+    }
+
+    @Test
+    void testPrecedence() {
+        assertEquals(11, eval("3+4*2"));
+    }
+
+    @Test
+    void testParen() {
+        assertEquals(14, eval("(3+4)*2"));
     }
 }

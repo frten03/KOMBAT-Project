@@ -6,59 +6,55 @@ import strategy.tokenizer.Tokenizer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ParserTest {
+public class ParserTest {
 
-    @Test
-    void parseMoveStatement() {
-        String src = "{ move up; }";
-        Parser p = new Parser(new Tokenizer(src));
-
-        Statement s = p.parseStatement();
-        assertNotNull(s);
+    private Statement parse(String src) {
+        Tokenizer tz = new Tokenizer(src);
+        Parser p = new Parser(tz);
+        return p.parseStatement();
     }
 
     @Test
-    void parseMoveAndShoot() {
-        String src = """
-        {
-            move up;
-            shoot down 10+5;
-        }
-        """;
-
-        Parser p = new Parser(new Tokenizer(src));
-        Statement s = p.parseStatement();
-        assertNotNull(s);
+    void testParseMove() {
+        assertNotNull(parse("move up;"));
+        assertNotNull(parse("move downright;"));
     }
 
     @Test
-    void parseIfWhileBlock() {
-        String src = """
-        {
-            while 1 {
-                if 1 done;
-            }
-        }
-        """;
-
-        Parser p = new Parser(new Tokenizer(src));
-        Statement s = p.parseStatement();
-        assertNotNull(s);
+    void testParseShoot() {
+        assertNotNull(parse("shoot up 10;"));
+        assertNotNull(parse("shoot down (3+4)*2;"));
     }
 
     @Test
-    void syntaxErrorMissingSemicolon() {
-        String src = "{ move up }"; // ไม่มี ;
-
-        Parser p = new Parser(new Tokenizer(src));
-        assertThrows(RuntimeException.class, p::parseStatement);
+    void testParseDone() {
+        assertNotNull(parse("done;"));
     }
 
     @Test
-    void syntaxErrorUnknownKeyword() {
-        String src = "{ move banana; }";
+    void testParseIf() {
+        assertNotNull(parse("if 1 then move up; else done;"));
+    }
 
-        Parser p = new Parser(new Tokenizer(src));
-        assertThrows(RuntimeException.class, p::parseStatement);
+    @Test
+    void testParseWhile() {
+        assertNotNull(parse("while 1 move up;"));
+    }
+
+    @Test
+    void testParseBlock() {
+        assertNotNull(parse("{ move up; move down; }"));
+    }
+
+    @Test
+    void testInvalidSyntax() {
+        assertThrows(RuntimeException.class,
+                () -> parse("move;")); // missing direction
+    }
+
+    @Test
+    void testInvalidToken() {
+        assertThrows(RuntimeException.class,
+                () -> parse("fly up;"));
     }
 }

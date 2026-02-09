@@ -15,7 +15,7 @@ public class WhileStmt implements Statement {
 
     public void eval(EvalContext ctx) {
         int count = 0;
-        while (cond.eval(ctx) > 0 && count < 10000 && !ctx.isEvaluationStopped()) {
+        while (cond.eval(ctx) > 0 && count < 10000 && !ctx.isDone()) {
             body.eval(ctx);
             count++;
         }

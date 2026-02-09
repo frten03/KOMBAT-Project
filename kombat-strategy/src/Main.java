@@ -34,6 +34,6 @@ public class Main {
         strategy.eval(ctx);
 
         // ===== สรุปผล =====
-        System.out.println("Strategy finished. done = " + ctx.isEvaluationStopped());
+        System.out.println("Strategy finished. done = " + ctx.isDone());
     }
 }

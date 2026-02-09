@@ -30,4 +30,5 @@ public class DummyGameAPI implements GameAPI {
     public long opponent() {
         return 0;   // ไม่มี opponent
     }
+
 }

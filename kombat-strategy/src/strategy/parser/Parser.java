@@ -4,6 +4,7 @@ import strategy.ast.*;
 import strategy.ast.core.Expression;
 import strategy.ast.core.Statement;
 import strategy.ast.expr.BinaryExpr;
+import strategy.ast.expr.InfoExpr;
 import strategy.ast.expr.NumberExpr;
 import strategy.ast.stmt.*;
 import strategy.tokenizer.*;
@@ -18,7 +19,7 @@ public class Parser {
         this.tz = tz;
     }
 
-    private Token eat(TokenType type) {
+    private Token consume(TokenType type) {
         Token t = tz.nextToken();
         if (t.type != type)
             throw new RuntimeException("Expected " + type);
@@ -31,7 +32,7 @@ public class Parser {
         while (true) {
             TokenType t = tz.peekToken().type;
             if (t == TokenType.PLUS || t == TokenType.MINUS) {
-                eat(t);
+                consume(t);
                 e = new BinaryExpr(e, t, parseTerm());
             } else break;
         }
@@ -44,7 +45,7 @@ public class Parser {
         while (true) {
             TokenType t = tz.peekToken().type;
             if (t == TokenType.MUL || t == TokenType.DIV) {
-                eat(t);
+                consume(t);
                 e = new BinaryExpr(e, t, parseFactor());
             } else break;
         }
@@ -53,15 +54,44 @@ public class Parser {
 
     private Expression parseFactor() {
         Token t = tz.nextToken();
-        if (t.type == TokenType.NUMBER)
-            return new NumberExpr(Long.parseLong(t.value));
-        if (t.type == TokenType.LPAREN) {
-            Expression e = parseExpression();
-            eat(TokenType.RPAREN);
-            return e;
+
+        switch (t.type) {
+            case NUMBER:
+                return new NumberExpr(Long.parseLong(t.value));
+
+            case LPAREN: {
+                Expression e = parseExpression();
+                consume(TokenType.RPAREN);
+                return e;
+            }
+
+            // ===== INFO EXPRESSIONS =====
+
+            case OPPONENT:
+                // opponent → delegate to GameAPI later
+                return new InfoExpr(InfoExpr.Kind.OPPONENT, null);
+
+            case NEARBY: {
+                Direction dir = parseDirection();
+                return new InfoExpr(InfoExpr.Kind.NEARBY, dir);
+
+            }
+
+            case ALLY:
+                return new InfoExpr(InfoExpr.Kind.ALLY, null);
+
+
+            // ===== IDENTIFIER (fallback) =====
+
+            case IDENT:
+                // temporary: unknown variable → 0
+                return new NumberExpr(0);
+
+            default:
+                throw new RuntimeException("Invalid factor: " + t.type);
         }
-        throw new RuntimeException("Invalid factor");
     }
+
 
     public Statement parseStatement() {
         Token t = tz.peekToken();
@@ -70,8 +100,8 @@ public class Parser {
             case WHILE -> parseWhile();
             case LBRACE -> parseBlock();
             case DONE -> {
-                eat(TokenType.DONE);
-                eat(TokenType.SEMI);
+                consume(TokenType.DONE);
+                consume(TokenType.SEMI);
                 yield new DoneStmt();
             }
             case MOVE -> parseMove();
@@ -81,40 +111,48 @@ public class Parser {
     }
 
     private Statement parseIf() {
-        eat(TokenType.IF);
+        consume(TokenType.IF);
+
         Expression cond = parseExpression();
-        Statement body = parseStatement();
-        return new IfStmt(cond, body);
+
+        consume(TokenType.THEN);
+        Statement thenStmt = parseStatement();
+
+        consume(TokenType.ELSE);
+        Statement elseStmt = parseStatement();
+
+        return new IfStmt(cond, thenStmt, elseStmt);
     }
 
+
     private Statement parseWhile() {
-        eat(TokenType.WHILE);
+        consume(TokenType.WHILE);
         Expression cond = parseExpression();
         Statement body = parseStatement();
         return new WhileStmt(cond, body);
     }
 
     private Statement parseBlock() {
-        eat(TokenType.LBRACE);
+        consume(TokenType.LBRACE);
         List<Statement> list = new ArrayList<>();
         while (tz.peekToken().type != TokenType.RBRACE)
             list.add(parseStatement());
-        eat(TokenType.RBRACE);
+        consume(TokenType.RBRACE);
         return new BlockStmt(list);
     }
 
     private Statement parseMove() {
-        eat(TokenType.MOVE);
+        consume(TokenType.MOVE);
         Direction dir = parseDirection();
-        eat(TokenType.SEMI);
+        consume(TokenType.SEMI);
         return new MoveStmt(dir);
     }
 
     private Statement parseShoot() {
-        eat(TokenType.SHOOT);
+        consume(TokenType.SHOOT);
         Direction dir = parseDirection();
         Expression cost = parseExpression();
-        eat(TokenType.SEMI);
+        consume(TokenType.SEMI);
         return new ShootStmt(dir, cost);
     }
 
