@@ -1,9 +1,10 @@
 package strategy.tokenizer;
 
 public enum TokenType {
-    IF, WHILE, DONE,
+    IF,THEN, ELSE, WHILE, DONE,
     IDENT, NUMBER,
     PLUS, MINUS, MUL, DIV,
+    EQ, // ==
     ASSIGN,
     LPAREN, RPAREN,
     LBRACE, RBRACE,
@@ -11,5 +12,5 @@ public enum TokenType {
     EOF,
     MOVE, SHOOT,
     UP, DOWN, UPLEFT, UPRIGHT, DOWNLEFT, DOWNRIGHT,
-
+    OPPONENT, NEARBY, ALLY,
     }

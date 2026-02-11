@@ -20,15 +20,11 @@ public class Player {
     }
 
     public boolean spendBudget(long cost) {
-        if (budget < cost) return true;
+        if (budget < cost) {
+            return false;
+        }
         budget -= cost;
-        return false;
-    }
-
-    public void decreaseBudget(long amount) {
-        budget -= amount;
-        if (budget < 0)
-            budget = 0;
+        return true;
     }
 
     public void addMinion(Minion m) {

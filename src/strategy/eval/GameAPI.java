@@ -15,7 +15,7 @@ public interface GameAPI {
 
 //ตัวอย่าง implement class *สามารถแก้ไขทีหลังได้ ถ้าเราคุยกันแล้วมีอะไรเปลี่ยนแปลง
 /*
-class game.RealGameAPI implements GameAPI {
+class RealGameAPI implements GameAPI {
     void move(Direction dir) { ... }
     void shoot(Direction dir, long cost) { ... }
     long nearby(Direction dir) { ... }

@@ -16,7 +16,7 @@ public class RealGameAPI implements GameAPI {
 
     @Override
     public void move(Direction dir) {
-        if (done) return;
+        if (done) return ;
         logic.moveMinion(self, dir); // budget / fail logic อยู่ข้างในแล้ว
     }
 
@@ -28,14 +28,38 @@ public class RealGameAPI implements GameAPI {
 
     @Override
     public long opponent() {
-        // ตัวอย่าง
-        return logic.getOpponent(self, Direction.UP) == null ? 0 : 1;
+        // ตัวอย่าง demo
+//        return logic.getOpponent(self, Direction.UP) == null ? 0 : 1;
+        // check edge no direction
+        return logic.hasOpponent(self) ? 1 : 0;
     }
 
+//    @Override
+//    public long nearby(Direction dir) {
+//        return logic.getOpponent(self, dir) == null ? 0 : 1;
+//    }
+
+    // เผื่อเก็บค่าไปเช็คว่าเป็น opponent
     @Override
     public long nearby(Direction dir) {
-        return logic.getOpponent(self, dir) == null ? 0 : 1;
+
+        int nr = self.getRow() + dir.dr;
+        int nc = self.getCol() + dir.dc;
+
+        if (!logic.getBoard().inBounds(nr, nc))
+            return -1;
+
+        Minion m = logic.getBoard().getMinion(nr, nc);
+
+        if (m == null)
+            return 0;
+
+        if (m.getOwner() == self.getOwner())
+            return 1;
+
+        return 2;
     }
+
 
     @Override
     public long ally() {

@@ -13,7 +13,7 @@ public class BlockStmt implements Statement {
 
     public void eval(EvalContext ctx) {
         for (Statement s : statements) {
-            if (ctx.isEvaluationStopped()) return;
+            if (ctx.isDone()) return;
             s.eval(ctx);
         }
     }

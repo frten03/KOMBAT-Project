@@ -18,7 +18,13 @@ public class DummyGameAPI implements GameAPI {
 
     @Override
     public long nearby(Direction dir) {
-        return 1;   // สมมติว่ามีอะไรอยู่ใกล้เสมอ
+        /*
+        return :
+        0 = empty
+        1 = ally
+        2 = opponent
+         */
+        return 1;
     }
 
     @Override
@@ -30,4 +36,5 @@ public class DummyGameAPI implements GameAPI {
     public long opponent() {
         return 0;   // ไม่มี opponent
     }
+
 }

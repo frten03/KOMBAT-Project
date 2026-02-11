@@ -5,35 +5,42 @@ import java.util.Map;
 
 public class Grid {
     private static final int SIZE = 8;
-    private final Map<String, Minion> cells = new HashMap<>();
+    private final Map<String, Minion> hexs = new HashMap<>();
 
     private String key(int r, int c) {
         return r + "," + c;
     }
 
     public boolean inBounds(int r, int c) {
-        return r >= 0 && r < SIZE && c >= 0 && c < SIZE;
+        return r >= 1 && r <= SIZE && c >= 1 && c <= SIZE;
     }
 
     public boolean isOccupied(int r, int c) {
-        return cells.containsKey(key(r, c));
+        return hexs.containsKey(key(r, c));
     }
 
     public Minion getMinion(int r, int c) {
-        return cells.get(key(r, c));
+        return hexs.get(key(r, c));
     }
 
     public void addMinion(Minion m) {
-        cells.put(key(m.getRow(), m.getCol()), m);
+        hexs.put(key(m.getRow(), m.getCol()), m);
     }
 
     public void moveMinion(Minion m, int nr, int nc) {
-        cells.remove(key(m.getRow(), m.getCol()));
+        hexs.remove(key(m.getRow(), m.getCol()));
         m.setPosition(nr, nc);
-        cells.put(key(nr, nc), m);
+        hexs.put(key(nr, nc), m);
     }
 
     public void removeMinion(Minion m) {
-        cells.remove(key(m.getRow(), m.getCol()));
+        String k = key(m.getRow(), m.getCol());
+        if (hexs.get(k) == m) {
+            hexs.remove(k);
+        }
+    }
+
+    public Iterable<Minion> getAllMinions() {
+        return hexs.values();
     }
 }
