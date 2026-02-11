@@ -21,4 +21,10 @@ public class InfoExprTest {
         InfoExpr e = new InfoExpr(InfoExpr.Kind.NEARBY, Direction.UP);
         assertEquals(1, e.eval(new EvalContext(new DummyGameAPI())));
     }
+
+    @Test
+    void testAlly(){
+        InfoExpr e = new InfoExpr(InfoExpr.Kind.ALLY, null);
+        assertEquals(0, e.eval(new EvalContext(new DummyGameAPI())));
+    }
 }
