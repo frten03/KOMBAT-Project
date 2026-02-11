@@ -25,9 +25,15 @@ public class Parser {
             throw new RuntimeException("Expected " + type);
         return t;
     }
-
+/*
+expression      → equality
+equality        → addSub (== addSub)*
+addSub          → term ((+|-) term)*
+term            → factor ((*|/) factor)*
+factor          → number | info | (expression)
+ */
     // expression = term ((+|-) term)*
-    public Expression parseExpression() {
+    /*public Expression parseExpression() {
         Expression e = parseTerm();
         while (true) {
             TokenType t = tz.peekToken().type;
@@ -36,6 +42,35 @@ public class Parser {
                 e = new BinaryExpr(e, t, parseTerm());
             } else break;
         }
+        return e;
+    }
+     */
+
+    public Expression parseExpression() {
+        return parseEquality();
+    }
+
+    private Expression parseEquality() {
+        Expression e = parseAddSub();
+
+        while (tz.peekToken().type == TokenType.EQ) {
+            consume(TokenType.EQ);
+            e = new BinaryExpr(e, TokenType.EQ, parseAddSub());
+        }
+
+        return e;
+    }
+    private Expression parseAddSub() {
+        Expression e = parseTerm();
+
+        while (true) {
+            TokenType t = tz.peekToken().type;
+            if (t == TokenType.PLUS || t == TokenType.MINUS) {
+                consume(t);
+                e = new BinaryExpr(e, t, parseTerm());
+            } else break;
+        }
+
         return e;
     }
 

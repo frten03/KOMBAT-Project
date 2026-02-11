@@ -26,19 +26,47 @@ public class Tokenizer {
         if (Character.isLetter(c)) return ident();
 
         pos++;
-        return switch (c) {
-            case '+' -> new Token(TokenType.PLUS, "+");
-            case '-' -> new Token(TokenType.MINUS, "-");
-            case '*' -> new Token(TokenType.MUL, "*");
-            case '/' -> new Token(TokenType.DIV, "/");
-            case '=' -> new Token(TokenType.ASSIGN, "=");
-            case '(' -> new Token(TokenType.LPAREN, "(");
-            case ')' -> new Token(TokenType.RPAREN, ")");
-            case '{' -> new Token(TokenType.LBRACE, "{");
-            case '}' -> new Token(TokenType.RBRACE, "}");
-            case ';' -> new Token(TokenType.SEMI, ";");
-            default -> throw new RuntimeException("Unexpected char: " + c);
-        };
+
+        switch (c) {
+
+            case '+':
+                return new Token(TokenType.PLUS, "+");
+
+            case '-':
+                return new Token(TokenType.MINUS, "-");
+
+            case '*':
+                return new Token(TokenType.MUL, "*");
+
+            case '/':
+                return new Token(TokenType.DIV, "/");
+
+            case '=':
+                if (pos < src.length() && src.charAt(pos) == '=') {
+                    pos++;
+                    return new Token(TokenType.EQ, "==");
+                }
+                throw new RuntimeException("Single '=' not allowed");
+
+            case '(':
+                return new Token(TokenType.LPAREN, "(");
+
+            case ')':
+                return new Token(TokenType.RPAREN, ")");
+
+            case '{':
+                return new Token(TokenType.LBRACE, "{");
+
+            case '}':
+                return new Token(TokenType.RBRACE, "}");
+
+            case ';':
+                return new Token(TokenType.SEMI, ";");
+
+            default:
+                throw new RuntimeException("Unexpected char: " + c);
+        }
+
     }
 
     private void skipSpace() {

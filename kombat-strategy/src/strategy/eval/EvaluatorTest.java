@@ -61,4 +61,17 @@ public class EvaluatorTest {
 
         assertDoesNotThrow(() -> s.eval(ctx));
     }
+
+    @Test
+    void testNearbyCompare() {
+        String src = "if nearby upright == 1 then {" +
+                "    move upleft;" +
+                "} else {" +
+                "    shoot upright 2;" +
+                "}";
+        EvalContext ctx = run(src);
+        // assert ตาม DummyGameAPI
+    }
+
+
 }
