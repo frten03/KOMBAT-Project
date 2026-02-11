@@ -1,0 +1,25 @@
+- จริง ๆ มี  done แล้ว แต่ไม่ได้ตั้งชื่อว่า done แต่แก้ไขให้เป็น done เรียบร้อยแล้ว /
+-test case 
+	-Parser Tests (Syntax / Grammar)
+		-Expression
+		-Factor พิเศษ
+		-Statement พื้นฐาน
+		-Control Flow
+	-Evaluator Tests (Execution)
+		-Action ถูกเรียก
+		-if/else
+		-while
+		-done
+	-InfoExpr + GameAPI
+		-opponent เรียก api.opponent()
+
+ 		-nearby dir เรียก api.nearby(dir)
+
+ 		-nearby ไม่มี dir → error
+	-Integration Tests (สำคัญสุด)
+		-strategy เต็มชุด รันได้ไม่ crash
+
+ 		-Parser + Evaluator + DummyGameAPI ทำงานร่วมกัน
+
+ 		-demo strategy จาก doc ใช้งานได้
+-opponent, nearby, then, else parse ได้แล้ว/
