@@ -25,11 +25,10 @@ public class Demo {
 
         System.out.println("=== DEMO BEFORE END ===");
 
-
         System.out.println("=== DEMO START ===");
 
         // ----- Game setup -----
-        Grid grid = new Grid();
+        Grid grid = new Grid(8);
         Player p1 = new Player(20);
         Player p2 = new Player(20);
 
@@ -48,19 +47,19 @@ public class Demo {
 
         //----- Strategy source -----
         // check block stmt
-//        String src = """
-//            {
-//                move up;
-//                shoot up 2;
-//            }
-//        """;
+        String src = """
+            {
+                move up;
+                shoot up 2;
+            }
+        """;
 
         // check if stmt
 //        String src = """
 //                if (opponent) then {
 //                    shoot up 2;
 //                    move down;
-//                } else {0
+//                } else {
 //                    move up;
 //                }
 //          """;
@@ -97,12 +96,12 @@ public class Demo {
 //        """;
 
         // check opponent
-        String src = """
-                if(nearby up == 2) then {
-                     shoot up 2;
-                } else {
-                }
-        """;
+//        String src = """
+//                if(nearby up == 2) then {
+//                     shoot up 2;
+//                } else {
+//                }
+//        """;
 
         Parser parser = new Parser(new Tokenizer(src));
         Statement strategy = parser.parseStatement();

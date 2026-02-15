@@ -1,46 +1,54 @@
 package game;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Grid {
-    private static final int SIZE = 8;
-    private final Map<String, Minion> hexs = new HashMap<>();
 
-    private String key(int r, int c) {
-        return r + "," + c;
+    private final int size;
+    private final Minion[][] board;
+
+    public Grid(int size) {
+        this.size = size;
+        this.board = new Minion[size+1][size+1]; // เริ่ม index ที่ 1
     }
 
     public boolean inBounds(int r, int c) {
-        return r >= 1 && r <= SIZE && c >= 1 && c <= SIZE;
+        return r >= 1 && r <= size && c >= 1 && c <= size;
     }
 
     public boolean isOccupied(int r, int c) {
-        return hexs.containsKey(key(r, c));
+        return board[r][c] != null;
     }
 
     public Minion getMinion(int r, int c) {
-        return hexs.get(key(r, c));
+        return board[r][c];
     }
 
     public void addMinion(Minion m) {
-        hexs.put(key(m.getRow(), m.getCol()), m);
+        board[m.getRow()][m.getCol()] = m;
     }
 
     public void moveMinion(Minion m, int nr, int nc) {
-        hexs.remove(key(m.getRow(), m.getCol()));
+        board[m.getRow()][m.getCol()] = null;
         m.setPosition(nr, nc);
-        hexs.put(key(nr, nc), m);
+        board[nr][nc] = m;
     }
 
     public void removeMinion(Minion m) {
-        String k = key(m.getRow(), m.getCol());
-        if (hexs.get(k) == m) {
-            hexs.remove(k);
-        }
+        board[m.getRow()][m.getCol()] = null;
     }
 
-    public Iterable<Minion> getAllMinions() {
-        return hexs.values();
+    public List<Minion> getAllMinions() {
+        List<Minion> list = new ArrayList<>();
+        for (int r = 1; r <= size; r++) {
+            for (int c = 1; c <= size; c++) {
+                if (board[r][c] != null) {
+                    list.add(board[r][c]);
+                }
+            }
+        }
+        return list;
     }
+
 }
