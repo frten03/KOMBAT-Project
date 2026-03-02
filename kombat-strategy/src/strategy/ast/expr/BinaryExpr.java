@@ -20,6 +20,8 @@ public class BinaryExpr implements Expression {
             case MINUS -> left.eval(ctx) - right.eval(ctx);
             case MUL -> left.eval(ctx) * right.eval(ctx);
             case DIV -> left.eval(ctx) / right.eval(ctx);
+            case MOD -> left.eval(ctx) % right.eval(ctx);
+            case POW -> (long)Math.pow(left.eval(ctx), right.eval(ctx));
             case EQ -> left.eval(ctx) == right.eval(ctx) ? 1 : 0;
             default -> throw new RuntimeException("Invalid operator");
         };

@@ -72,6 +72,4 @@ public class EvaluatorTest {
         EvalContext ctx = run(src);
         // assert ตาม DummyGameAPI
     }
-
-
 }
