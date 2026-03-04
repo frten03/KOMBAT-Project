@@ -13,11 +13,25 @@ public class WhileStmt implements Statement {
         this.body = body;
     }
 
+    @Override
     public void eval(EvalContext ctx) {
-        int count = 0;
-        while (cond.eval(ctx) > 0 && count < 10000 && !ctx.isDone()) {
+
+        int counter = 0;
+
+        while (!ctx.isDone()) {
+
+            long condition = cond.eval(ctx);
+            if (ctx.isDone()) return;
+
+            if (condition <= 0) return;
+
+            if (counter >= 10000) {
+                ctx.terminate(EvalContext.TerminationReason.LOOP_LIMIT);
+                return;
+            }
+
             body.eval(ctx);
-            count++;
+            counter++;
         }
     }
 }

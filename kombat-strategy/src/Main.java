@@ -5,6 +5,8 @@ import strategy.eval.EvalContext;
 import strategy.eval.GameAPI;
 import strategy.eval.DummyGameAPI;
 
+import java.util.HashMap;
+
 public class Main {
 
     public static void main(String[] args) {
@@ -77,7 +79,7 @@ public class Main {
         GameAPI api = new DummyGameAPI();
 
         // ===== EvalContext (หนึ่ง minion, หนึ่ง turn) =====
-        EvalContext ctx = new EvalContext(api);
+        EvalContext ctx = new EvalContext(api, new HashMap<>());
 
         // ===== Parse =====
         Parser parser = new Parser(new Tokenizer(src));

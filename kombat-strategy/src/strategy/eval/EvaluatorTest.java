@@ -5,71 +5,239 @@ import strategy.ast.core.Statement;
 import strategy.parser.Parser;
 import strategy.tokenizer.Tokenizer;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class EvaluatorTest {
 
+    //helper
     private EvalContext run(String src) {
-        Parser p = new Parser(new Tokenizer(src));
-        Statement s = p.parseStatement();
-        EvalContext ctx = new EvalContext(new DummyGameAPI());
-        s.eval(ctx);
+        DummyGameAPI api = new DummyGameAPI();
+        EvalContext ctx = new EvalContext(api, new HashMap<>());
+        runWith(ctx, src);
         return ctx;
     }
 
+    private void runWith(EvalContext ctx, String src) {
+        Parser p = new Parser(new Tokenizer(src));
+        Statement s = p.parseStatement();
+        s.eval(ctx);
+    }
+
+    // Basic execution tests
+
     @Test
     void testMoveExecutes() {
-        EvalContext ctx = run("move up;");
+        EvalContext ctx = run("move up");
         assertFalse(ctx.isDone());
+    }
+
+    @Test
+    void testMoveBudgetInsufficientTerminates() {
+        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
+        api.setBudget(0);
+
+        EvalContext ctx = new EvalContext(api, new HashMap<>());
+        runWith(ctx, "move up");
+
+        assertTrue(ctx.isDone());
+        assertEquals(EvalContext.TerminationReason.BUDGET_INSUFFICIENT,
+                ctx.getTerminationReason());
     }
 
     @Test
     void testShootExecutes() {
-        EvalContext ctx = run("shoot down 10;");
+        EvalContext ctx = run("shoot down 10");
         assertFalse(ctx.isDone());
+    }
+
+    @Test
+    void testShootBudgetInsufficientNoTerminate() {
+        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
+        api.setBudget(1); // cost 5 → need 6
+
+        EvalContext ctx = new EvalContext(api, new HashMap<>());
+        runWith(ctx, "shoot up 5");
+
+        assertFalse(ctx.isDone());
+        assertEquals(0, api.shootCount);
     }
 
     @Test
     void testDoneStops() {
-        EvalContext ctx = run("done;");
+        EvalContext ctx = run("done");
         assertTrue(ctx.isDone());
     }
+
+
+    // If / While
+
 
     @Test
     void testIfTrueExecutes() {
-        EvalContext ctx = run("if 1 then done; else move up;");
+        EvalContext ctx = run("if 1 then done else move up");
         assertTrue(ctx.isDone());
     }
 
     @Test
-    void testIfFalseSkips() {
-        EvalContext ctx = run("if 0 then move up; else done;");
+    void testIfFalseExecutesElse() {
+        EvalContext ctx = run("if 0 then move up else done");
         assertTrue(ctx.isDone());
     }
 
     @Test
-    void testWhileTerminates() {
-        EvalContext ctx = run("while 0 move up;");
+    void testWhileFalseDoesNothing() {
+        EvalContext ctx = run("while 0 move up");
         assertFalse(ctx.isDone());
     }
 
     @Test
-    void testWhileLimit() {
-        Parser p = new Parser(new Tokenizer("while 1 move up;"));
-        Statement s = p.parseStatement();
-        EvalContext ctx = new EvalContext(new DummyGameAPI());
-
-        assertDoesNotThrow(() -> s.eval(ctx));
+    void testWhileLimitDoesNotCrash() {
+        EvalContext ctx = run("while 1 move up");
+        assertDoesNotThrow(() -> {});
     }
 
     @Test
-    void testNearbyCompare() {
-        String src = "if nearby upright == 1 then {" +
-                "    move upleft;" +
-                "} else {" +
-                "    shoot upright 2;" +
-                "}";
-        EvalContext ctx = run(src);
-        // assert ตาม DummyGameAPI
+    void testWhileLoopLimitTerminates() {
+        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
+        api.setBudget(20000); // สำคัญมาก
+
+        EvalContext ctx = new EvalContext(api, new HashMap<>());
+
+        runWith(ctx, "while 1 move up");
+
+        assertTrue(ctx.isDone());
+        assertEquals(EvalContext.TerminationReason.LOOP_LIMIT,
+                ctx.getTerminationReason());
+    }
+
+
+    // Division by zero
+
+
+    @Test
+    void testDivisionByZeroTerminates() {
+        EvalContext ctx = run("x = 10/0");
+        assertTrue(ctx.isDone());
+        assertEquals(EvalContext.TerminationReason.DIVISION_BY_ZERO,
+                ctx.getTerminationReason());
+    }
+
+    @Test
+    void testModuloByZeroTerminates() {
+        EvalContext ctx = run("x = 5%0");
+        assertTrue(ctx.isDone());
+        assertEquals(EvalContext.TerminationReason.DIVISION_BY_ZERO,
+                ctx.getTerminationReason());
+    }
+
+
+    // Special variables
+
+
+    @Test
+    void testAssignSpecialNoEffect() {
+        EvalContext ctx = run("Budget = 5");
+        assertNotEquals(5, ctx.resolveIdentifier("Budget"));
+    }
+
+    @Test
+    void testReadSpecialVariable() {
+        DummyGameAPI api = new DummyGameAPI();
+        api.setBudget(123);
+
+        EvalContext ctx = new EvalContext(api, new HashMap<>());
+        runWith(ctx, "x = Budget");
+
+        assertEquals(123, ctx.getVariable("x"));
+    }
+
+
+    // Local variables
+
+
+    @Test
+    void testLocalVariable() {
+        EvalContext ctx = run("x = 5");
+        assertEquals(5, ctx.getVariable("x"));
+    }
+
+
+    // Global variables
+
+
+    @Test
+    void testGlobalVariable() {
+        Map<String, Long> globals = new HashMap<>();
+        DummyGameAPI api = new DummyGameAPI();
+        EvalContext ctx = new EvalContext(api, globals);
+
+        runWith(ctx, "X = 10");
+
+        assertEquals(10, globals.get("X"));
+    }
+
+    @Test
+    void testSharingGlobalVariableBetweenContexts() {
+        Map<String, Long> globals = new HashMap<>();
+
+        DummyGameAPI api1 = new DummyGameAPI();
+        DummyGameAPI api2 = new DummyGameAPI();
+
+        EvalContext ctx1 = new EvalContext(api1, globals);
+        EvalContext ctx2 = new EvalContext(api2, globals);
+
+        runWith(ctx1, "X = 7");
+
+        assertEquals(7, ctx2.getVariable("X"));
+    }
+
+
+    // RecordingDummyGameAPI tests
+
+
+    @Test
+    void testRecordingMove() {
+        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
+        EvalContext ctx = new EvalContext(api, new HashMap<>());
+
+        runWith(ctx, "move up");
+
+        assertEquals(1, api.moveCount);
+        assertEquals(strategy.ast.Direction.UP, api.lastMoveDir);
+    }
+
+    @Test
+    void testRecordingShoot() {
+        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
+        EvalContext ctx = new EvalContext(api, new HashMap<>());
+
+        runWith(ctx, "shoot down 5");
+
+        assertEquals(1, api.shootCount);
+        assertEquals(strategy.ast.Direction.DOWN, api.lastShootDir);
+        assertEquals(5, api.lastShootCost);
+    }
+
+
+    // Nearby comparison
+
+
+    @Test
+    void testNearbyCompareBranch() {
+        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
+        api.setNearby(1);  // condition true
+
+        EvalContext ctx = new EvalContext(api, new HashMap<>());
+
+        String src =
+                "if nearby upright == 1 then move upleft else shoot upright 2";
+
+        runWith(ctx, src);
+
+        assertEquals(1, api.moveCount);
+        assertEquals(0, api.shootCount);
     }
 }

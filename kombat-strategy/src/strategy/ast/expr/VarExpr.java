@@ -13,6 +13,7 @@ public class VarExpr implements Expression {
 
     @Override
     public long eval(EvalContext ctx) {
-        return ctx.getVariable(name);
+        if (ctx.isDone()) return 0;
+        return ctx.resolveIdentifier(name);
     }
 }

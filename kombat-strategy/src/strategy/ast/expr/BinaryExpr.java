@@ -15,14 +15,42 @@ public class BinaryExpr implements Expression {
     }
 
     public long eval(EvalContext ctx) {
+
+        if (ctx.isDone()) return 0;
+
+        long leftVal = left.eval(ctx);
+        if (ctx.isDone()) return 0;
+
+        long rightVal = right.eval(ctx);
+        if (ctx.isDone()) return 0;
+
         return switch (op) {
-            case PLUS -> left.eval(ctx) + right.eval(ctx);
-            case MINUS -> left.eval(ctx) - right.eval(ctx);
-            case MUL -> left.eval(ctx) * right.eval(ctx);
-            case DIV -> left.eval(ctx) / right.eval(ctx);
-            case MOD -> left.eval(ctx) % right.eval(ctx);
-            case POW -> (long)Math.pow(left.eval(ctx), right.eval(ctx));
-            case EQ -> left.eval(ctx) == right.eval(ctx) ? 1 : 0;
+            case PLUS -> leftVal + rightVal;
+
+            case MINUS -> leftVal - rightVal;
+
+            case MUL -> leftVal * rightVal;
+
+            case DIV -> {
+                if (rightVal == 0) {
+                    ctx.terminate(EvalContext.TerminationReason.DIVISION_BY_ZERO);
+                    yield 0;
+                }
+                yield leftVal / rightVal;
+            }
+
+            case MOD -> {
+                if (rightVal == 0) {
+                    ctx.terminate(EvalContext.TerminationReason.DIVISION_BY_ZERO);
+                    yield 0;
+                }
+                yield leftVal % rightVal;
+            }
+
+            case POW -> (long) Math.pow(leftVal, rightVal);
+
+            case EQ -> leftVal == rightVal ? 1 : 0;
+
             default -> throw new RuntimeException("Invalid operator");
         };
     }

@@ -6,6 +6,8 @@ import strategy.eval.DummyGameAPI;
 import strategy.eval.EvalContext;
 import strategy.tokenizer.Tokenizer;
 
+import java.util.HashMap;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ExpressionTest {
@@ -13,7 +15,8 @@ public class ExpressionTest {
     private long eval(String expr) {
         Parser p = new Parser(new Tokenizer(expr));
         Expression e = p.parseExpression();
-        return e.eval(new EvalContext(new DummyGameAPI()));
+        EvalContext ctx = new EvalContext(new DummyGameAPI(), new HashMap<>());
+        return e.eval(ctx);
     }
 
     @Test
@@ -41,5 +44,31 @@ public class ExpressionTest {
     @Test
     void testParen() {
         assertEquals(14, eval("(3+4)*2"));
+    }
+
+    @Test
+    void testDivisionByZeroTerminates() {
+        Parser p = new Parser(new Tokenizer("10/0"));
+        Expression e = p.parseExpression();
+
+        EvalContext ctx = new EvalContext(new DummyGameAPI(), new HashMap<>());
+
+        e.eval(ctx);
+
+        assertTrue(ctx.isDone());
+        assertEquals(EvalContext.TerminationReason.DIVISION_BY_ZERO,
+                ctx.getTerminationReason());
+    }
+
+    @Test
+    void testSpecialVariableBudget() {
+        DummyGameAPI api = new DummyGameAPI();
+        api.setBudget(1000);   // กำหนดค่า test เอง
+
+        EvalContext ctx = new EvalContext(api, new HashMap<>());
+        Parser p = new Parser(new Tokenizer("Budget"));
+        Expression e = p.parseExpression();
+
+        assertEquals(1000, e.eval(ctx));
     }
 }

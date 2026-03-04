@@ -17,6 +17,9 @@ public class AssignmentStmt implements Statement {
     @Override
     public void eval(EvalContext ctx) {
         long value = expr.eval(ctx);
+        if(ctx.isSpecial(name)){
+            return;
+        }
         ctx.setVariable(name, value);
     }
 }
