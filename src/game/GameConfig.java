@@ -33,6 +33,7 @@ public class GameConfig {
         this.maxSpawns = maxSpawns;
     }
 
+    // getter UI
     public long getSpawnCost() {
         return spawnCost;
     }

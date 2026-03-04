@@ -3,6 +3,7 @@ package game;
 import java.util.List;
 import java.util.ArrayList;
 
+// for UI (1 turn)
 public class TurnSummary {
 
     private int turnNumber;

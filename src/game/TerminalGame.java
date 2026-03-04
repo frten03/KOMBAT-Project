@@ -303,6 +303,7 @@ public class TerminalGame {
             System.out.println("\n----------------------------------");
             System.out.println("Turn: " + p.getTurnCount());
             System.out.println(currentPlayerName(game));
+            System.out.println("HP: " + p.sumHP());
             System.out.println("Budget: " + p.getBudget());
             System.out.println("Spawns left: " + p.getSpawnsLeft());
 
@@ -368,54 +369,56 @@ public class TerminalGame {
                     }
                 }
 
-                while (true) {
+                if (p.getSpawnsLeft() > 0) {
 
-                    if (!readYesNo(sc, "Spawn minion? (y/n): ")) break;
+                    if (readYesNo(sc, "Spawn minion? (y/n): ")) {
 
-                    System.out.println("Spawnable hexes:");
-                    for (int r = 1; r <= SIZE; r++) {
-                        for (int c = 1; c <= SIZE; c++) {
-                            if (game.canSpawn(r, c)) {
-                                System.out.print("(" + r + "," + c + ") ");
+                        System.out.println("Spawnable hexes:");
+                        for (int r = 1; r <= SIZE; r++) {
+                            for (int c = 1; c <= SIZE; c++) {
+                                if (game.canSpawn(r, c)) {
+                                    System.out.print("(" + r + "," + c + ") ");
+                                }
                             }
                         }
-                    }
-                    System.out.println();
+                        System.out.println();
 
-                    System.out.print("Type: ");
-                    String type = sc.nextLine();
+                        System.out.print("Type: ");
+                        String type = sc.nextLine();
 
-                    int r;
-                    while (true) {
-                        System.out.print("Row: ");
-                        String input = sc.nextLine().trim();
+                        int r;
+                        while (true) {
+                            System.out.print("Row: ");
+                            String input = sc.nextLine().trim();
+                            try {
+                                r = Integer.parseInt(input);
+                                break;
+                            } catch (NumberFormatException e) {
+                                System.out.println("Invalid number.");
+                            }
+                        }
 
-                        try {
-                            r = Integer.parseInt(input);
-                            break;
-                        } catch (NumberFormatException e) {
-                            System.out.println("Invalid number. Please enter a valid integer.");
+                        int c;
+                        while (true) {
+                            System.out.print("Col: ");
+                            String input = sc.nextLine().trim();
+                            try {
+                                c = Integer.parseInt(input);
+                                break;
+                            } catch (NumberFormatException e) {
+                                System.out.println("Invalid number.");
+                            }
+                        }
+
+                        if (game.spawnMinion(type, r, c)) {
+                            System.out.println("Spawned.");
+                        } else {
+                            System.out.println("Spawn failed.");
                         }
                     }
-                    int c;
-                    while (true) {
-                        System.out.print("Col: ");
-                        String input = sc.nextLine().trim();
 
-                        try {
-                            c = Integer.parseInt(input);
-                            break;
-                        } catch (NumberFormatException e) {
-                            System.out.println("Invalid number. Please enter a valid integer.");
-                        }
-                    }
-
-                    if (game.spawnMinion(type, r, c)) {
-                        System.out.println("Spawned.");
-                        break;
-                    } else {
-                        System.out.println("Failed. Try again.");
-                    }
+                } else {
+                    System.out.println("Spawn limit reached. Cannot spawn.");
                 }
             }
 
@@ -426,13 +429,32 @@ public class TerminalGame {
         System.out.println("\n=== GAME OVER ===");
         Player winner = game.determineWinner();
 
+        System.out.println("Final Stats:");
+        System.out.println("Player 1 - Minions: "
+                + game.getPlayer1().getMinions().size()
+                + " | HP: " + game.getPlayer1().sumHP()
+                + " | Budget: " + game.getPlayer1().getBudget());
+
+        System.out.println("Player 2 - Minions: "
+                + game.getPlayer2().getMinions().size()
+                + " | HP: " + game.getPlayer2().sumHP()
+                + " | Budget: " + game.getPlayer2().getBudget());
+
         if (winner == null) {
             System.out.println("Tie.");
         } else {
             System.out.println("Winner: " +
                     (winner == game.getPlayer1() ? "Player 1" : "Player 2"));
         }
+        System.out.println("Reason: " + game.getGameOverReason());
     }
+
+    private static final String RESET = "\u001B[0m";
+
+    private static final String BG_BLUE = "\u001B[44m";
+    private static final String BG_RED  = "\u001B[41m";
+
+    private static final String WHITE_TEXT = "\u001B[97m";
 
     private static void printBoard(GameState game, Player current) {
 
@@ -443,7 +465,7 @@ public class TerminalGame {
         // column header
         System.out.print("     ");
         for (int c = 1; c <= SIZE; c++) {
-            System.out.printf("%-4d", c);
+            System.out.printf("%-8d", c);
         }
         System.out.println();
 
@@ -456,20 +478,29 @@ public class TerminalGame {
 
             for (int c = 1; c <= SIZE; c++) {
 
-                String cell;
+                String hex;
                 Minion m = board.getMinion(r, c);
 
                 if (m != null) {
-                    cell = (m.getOwner() == game.getPlayer1()) ? "[1]" : "[2]";
+                    int owner = (m.getOwner() == game.getPlayer1()) ? 1 : 2;
+                    int hp = m.getHp();
+
+                    String text = String.format(" %d:%03d ", owner, hp);
+
+                    if (owner == 1) {
+                        hex = BG_BLUE + WHITE_TEXT + text + RESET;
+                    } else {
+                        hex = BG_RED + WHITE_TEXT + text + RESET;
+                    }
                 } else if (game.canSpawn(r, c)) {
-                    cell = "[S]";
+                    hex = "[S]";
                 } else if (game.canPurchase(r, c)) {
-                    cell = "[$]";
+                    hex = "[$]";
                 } else {
-                    cell = "[ ]";
+                    hex = "[ ]";
                 }
 
-                System.out.printf("%-4s", cell);
+                System.out.printf("%-8s", hex);
             }
 
             System.out.println();

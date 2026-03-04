@@ -3,6 +3,7 @@ package game;
 import java.io.*;
 import java.util.*;
 
+// Check Config file → ConfigLoader → GameConfig → GameState
 public class ConfigLoader {
 
     private static final Set<String> REQUIRED_KEYS = Set.of(
@@ -65,7 +66,7 @@ public class ConfigLoader {
             }
         }
 
-        // เช็คว่าครบทุก key
+        // check config have all key
         for (String key : REQUIRED_KEYS) {
             if (!values.containsKey(key)) {
                 throw new IllegalArgumentException("Missing config value: " + key);

@@ -16,18 +16,6 @@ public class GameLogic {
         this.config = config;
     }
 
-    public Grid getBoard() {
-        return board;
-    }
-
-    public Player getPlayer(Player owner) {
-        return owner;
-    }
-
-    public GameConfig getConfig() {
-        return config;
-    }
-
     // movement
     public boolean canMove(Minion m, Direction dir) {
         int nr = m.getRow() + dir.dr;
@@ -42,13 +30,13 @@ public class GameLogic {
     public boolean moveMinion(Minion minion, Direction dir) {
         Player p = minion.getOwner();
 
-        // เงินไม่พอ → fail
+        // Not enough money -> fail
         if (!p.spendBudget(1)) return false;
 
         int nr = minion.getRow() + dir.dr;
         int nc = minion.getCol() + dir.dc;
 
-        // เดินไม่ได้ → fail
+        // cant move -> fail
         if (!board.inBounds(nr, nc)) return false;
         if (board.isOccupied(nr, nc)) return false;
 
@@ -56,7 +44,7 @@ public class GameLogic {
         return true;
     }
 
-    // ===== combat =====
+    // combat
     public boolean shoot(Minion attacker, Direction dir, long cost) {
         Player p = attacker.getOwner();
 
@@ -79,7 +67,7 @@ public class GameLogic {
         return true;
     }
 
-    // ===== info =====
+    // info
     public Minion getOpponent(Minion self, Direction dir) {
         int tr = self.getRow() + dir.dr;
         int tc = self.getCol() + dir.dc;
@@ -98,5 +86,18 @@ public class GameLogic {
             }
         }
         return false;
+    }
+
+    // getter UI
+    public Grid getBoard() {
+        return board;
+    }
+
+    public Player getPlayer(Player owner) {
+        return owner;
+    }
+
+    public GameConfig getConfig() {
+        return config;
     }
 }

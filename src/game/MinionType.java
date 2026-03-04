@@ -12,12 +12,13 @@ public class MinionType {
         this.strategySource = strategySource;
     }
 
-    public String getName() { return name; }
-    public int getDefense() { return defense; }
-    public String getStrategySource() { return strategySource; }
-
-    // method แก้ค่า immutable
+    // method edit immutable
     public MinionType withConfig(int newDefense, String newStrategySource) {
         return new MinionType(this.name, newDefense, newStrategySource);
     }
+
+    // getter
+    public String getName() { return name; }
+    public int getDefense() { return defense; }
+    public String getStrategySource() { return strategySource; }
 }

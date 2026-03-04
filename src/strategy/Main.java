@@ -1,3 +1,5 @@
+package strategy;
+
 import strategy.parser.Parser;
 import strategy.tokenizer.Tokenizer;
 import strategy.ast.core.Statement;

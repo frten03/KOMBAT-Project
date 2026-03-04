@@ -1,5 +1,6 @@
 package game;
 
+// constructor keep action for show terminal and UI
 public class ActionResult {
 
     private String description;

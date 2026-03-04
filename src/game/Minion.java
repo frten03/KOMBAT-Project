@@ -29,30 +29,6 @@ public class Minion {
         this.type = type;
     }
 
-    public MinionType getType() {
-        return type;
-    }
-
-    public int getRow() {
-        return row;
-    }
-
-    public int getCol() {
-        return col;
-    }
-
-    public int getHp() {
-        return hp;
-    }
-
-    public int getDefense() {
-        return defense;
-    }
-
-    public Player getOwner() {
-        return owner;
-    }
-
     public void setPosition(int r, int c) {
         this.row = r;
         this.col = c;
@@ -75,6 +51,31 @@ public class Minion {
                 ", def=" + defense +
                 ", ownerBudget=" + owner.getBudget() +
                 '}';
+    }
+
+    // getter
+    public MinionType getType() {
+        return type;
+    }
+
+    public int getRow() {
+        return row;
+    }
+
+    public int getCol() {
+        return col;
+    }
+
+    public int getHp() {
+        return hp;
+    }
+
+    public int getDefense() {
+        return defense;
+    }
+
+    public Player getOwner() {
+        return owner;
     }
 
 }

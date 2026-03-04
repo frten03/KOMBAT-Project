@@ -23,11 +23,17 @@ public class GameState {
     private final Random random = new Random();
 
     private final StrategyEvaluator evaluator;
+
     private Player currentPlayer;
     private Phase phase = Phase.SETUP;
 
+    private boolean purchasedThisTurn = false;
+    private boolean spawnedThisTurn = false;
+
     private boolean p1InitialSpawnDone = false;
     private boolean p2InitialSpawnDone = false;
+
+    private String gameOverReason;
 
     public GameState(GameConfig config, GameMode mode) {
         if (config == null || mode == null)
@@ -75,6 +81,7 @@ public class GameState {
         }
     }
 
+    // getter
     public GameConfig getConfig() {
         return config;
     }
@@ -132,49 +139,49 @@ public class GameState {
     }
 
     private static final String DEFAULT_STRATEGY = """
-{
-    op = opponent
-
-    if (Budget - 2) then {} else done
-
-    if (op)
-    then {
-        dir = op % 10
-
-        if (op / 10 - 1)
-        then
-            if (dir - 5) then move downleft
-            else if (dir - 4) then move down
-            else if (dir - 3) then move downright
-            else if (dir - 2) then move upright
-            else if (dir - 1) then move up
-            else move upleft
-        else {
-            cost = baseCost
-
-            if (Budget - cost)
-            then
-                if (dir - 5) then shoot downleft cost
-                else if (dir - 4) then shoot down cost
-                else if (dir - 3) then shoot downright cost
-                else if (dir - 2) then shoot upright cost
-                else if (dir - 1) then shoot up cost
-                else shoot upleft cost
-            else move up
+        {
+            op = opponent
+        
+            if (Budget - 2) then {} else done
+        
+            if (op)
+            then {
+                dir = op % 10
+        
+                if (op / 10 - 1)
+                then
+                    if (dir - 5) then move downleft
+                    else if (dir - 4) then move down
+                    else if (dir - 3) then move downright
+                    else if (dir - 2) then move upright
+                    else if (dir - 1) then move up
+                    else move upleft
+                else {
+                    cost = baseCost
+        
+                    if (Budget - cost)
+                    then
+                        if (dir - 5) then shoot downleft cost
+                        else if (dir - 4) then shoot down cost
+                        else if (dir - 3) then shoot downright cost
+                        else if (dir - 2) then shoot upright cost
+                        else if (dir - 1) then shoot up cost
+                        else shoot upleft cost
+                    else move up
+                }
+            }
+            else {
+                r = random % 6
+        
+                if (r - 5) then move downleft
+                else if (r - 4) then move down
+                else if (r - 3) then move downright
+                else if (r - 2) then move upright
+                else if (r - 1) then move up
+                else move upleft
+            }
         }
-    }
-    else {
-        r = random % 6
-
-        if (r - 5) then move downleft
-        else if (r - 4) then move down
-        else if (r - 3) then move downright
-        else if (r - 2) then move upright
-        else if (r - 1) then move up
-        else move upleft
-    }
-}
-""";
+        """;
 
     // setup phase
     public boolean initialSpawn(String typeName, int r, int c) {
@@ -218,20 +225,23 @@ public class GameState {
         player2.lockSetup();
     }
 
-    // TURN FLOW
+    // turn flow
     public void startTurn() {
 
         if (phase != Phase.RUNNING) return;
 
+        purchasedThisTurn = false;   // reset
+        spawnedThisTurn = false;     // reset
+
         Player p = currentPlayer;
 
-        // เพิ่มงบก่อน
+        // increment budget
         p.setBudget(p.getBudget() + config.getTurnBudget());
 
         double m = p.getBudget();
-        long t = p.getTurnCount() + 1;   // ใช้ turn ใหม่
+        long t = p.getTurnCount() + 1;   // use new turn
 
-        // คิดดอกเบี้ย
+        // interest calculator
         if (m >= 1 && t >= 1) {
 
             double b = config.getInterestPct();
@@ -250,10 +260,11 @@ public class GameState {
         p.incrementTurn();
     }
 
-    // purchasw hex
+    // purchase hex
     public boolean purchaseHex(int r, int c) {
 
         if (phase != Phase.RUNNING) return false;
+        if (purchasedThisTurn) return false;   // buy 1 hex for 1 turn
         if (!board.inBounds(r, c)) return false;
 
         Player p = currentPlayer;
@@ -265,9 +276,11 @@ public class GameState {
         if (!p.spendBudget(cost)) return false;
 
         p.addSpawnableHex(r, c);
+        purchasedThisTurn = true;    // mark : already bought
         return true;
     }
 
+    // adjacent spawn able
     private boolean isAdjacentToSpawnable(Player p, int r, int c) {
 
         int[][] dirs = {
@@ -283,30 +296,12 @@ public class GameState {
         return false;
     }
 
-    public boolean canPurchase(int r, int c) {
-
-        // ต้องอยู่ใน board
-        if (!board.inBounds(r, c)) return false;
-
-        // ต้องไม่มี minion
-        if (board.getMinion(r, c) != null) return false;
-
-        // ต้องยังไม่เป็น spawnable
-        if (currentPlayer.isSpawnable(r, c)) return false;
-
-        // ต้องติดกับ spawnable เดิม
-        if (!isAdjacentToSpawnable(r, c)) return false;
-
-        // ต้องมีเงินพอ
-        return currentPlayer.canPurchaseHex();
-    }
-
     private boolean isAdjacentToSpawnable(int r, int c) {
 
         int[][] dirs = {
                 {-1, 0}, {1, 0},
                 {0, -1}, {0, 1},
-                {-1, 1}, {1, -1}   // hex skew
+                {-1, 1}, {1, -1}
         };
 
         for (int[] d : dirs) {
@@ -319,6 +314,20 @@ public class GameState {
         }
 
         return false;
+    }
+
+    // can purchase
+    public boolean canPurchase(int r, int c) {
+
+        if (!board.inBounds(r, c)) return false; // must be on the board
+
+        if (board.getMinion(r, c) != null) return false; // must not have minions.
+
+        if (currentPlayer.isSpawnable(r, c)) return false; // must not be spawnable yet
+
+        if (!isAdjacentToSpawnable(r, c)) return false; // adjacent old spawnable
+
+        return currentPlayer.canPurchaseHex(); // must have enough money
     }
 
     //minion
@@ -381,9 +390,15 @@ public class GameState {
     public boolean spawnMinion(String typeName, int r, int c) {
 
         if (phase != Phase.RUNNING) return false;
+        if (spawnedThisTurn) return false;   // 1 spawn for 1 turn
         if (!board.inBounds(r, c)) return false;
 
         Player p = currentPlayer;
+
+        if (currentPlayer.getSpawnsLeft() <= 0) {
+            System.out.println("Spawn limit reached. Cannot spawn.");
+            return false;
+        }
 
         MinionType type = p.getTypeByName(typeName);
         if (type == null) return false;
@@ -407,28 +422,10 @@ public class GameState {
         p.addMinion(m);
         p.incrementSpawnsUsed();
 
+        spawnedThisTurn = true;   // mark already spawn
         return true;
     }
 
-    // execution
-    public void executeMinions() {
-        List<Minion> snapshot =
-                new ArrayList<>(currentPlayer.getMinions());
-
-        for (Minion m : snapshot) {
-
-            if (!m.isAlive()) continue;
-
-            evaluator.evaluate(m, this);
-
-            cleanupDeadMinions();
-
-            if (isGameOver()) {
-                phase = Phase.FINISHED;
-                return;
-            }
-        }
-    }
     private void cleanupDeadMinions() {
 
         removeDeadFromPlayer(player1);
@@ -449,12 +446,30 @@ public class GameState {
         }
     }
 
+    // execution
+    public void executeMinions() {
+        List<Minion> snapshot =
+                new ArrayList<>(currentPlayer.getMinions());
+
+        for (Minion m : snapshot) {
+
+            if (!m.isAlive()) continue;
+
+            evaluator.evaluate(m, this);
+
+            cleanupDeadMinions();
+
+            if (isGameOver()) {
+                return;
+            }
+        }
+    }
+
+    // turn
     public void endTurn() {
         if (isGameOver()) {
-            phase = Phase.FINISHED;
             return;
         }
-
         switchTurn();
     }
 
@@ -466,17 +481,63 @@ public class GameState {
 
     // end game
     public boolean isGameOver() {
+
         if (phase == Phase.FINISHED) return true;
 
         // one player has no minions
-        if (player1.hasNoMinions()) return true;
-        if (player2.hasNoMinions()) return true;
+        if (player1.hasNoMinions() && !player2.hasNoMinions()) {
+            gameOverReason = "Player 1 has no minions left.";
+            phase = Phase.FINISHED;
+            return true;
+        }
+
+        if (player2.hasNoMinions() && !player1.hasNoMinions()) {
+            gameOverReason = "Player 2 has no minions left.";
+            phase = Phase.FINISHED;
+            return true;
+        }
 
         // both reached max turns
         if (player1.getTurnCount() >= config.getMaxTurns()
                 && player2.getTurnCount() >= config.getMaxTurns()) {
+
+            phase = Phase.FINISHED;
+
+            int m1 = player1.getMinions().size();
+            int m2 = player2.getMinions().size();
+
+            if (m1 > m2) {
+                gameOverReason = "Maximum turns reached. Player 1 has more minions.";
+            }
+            else if (m2 > m1) {
+                gameOverReason = "Maximum turns reached. Player 2 has more minions.";
+            }
+            else {
+                long hp1 = player1.sumHP();
+                long hp2 = player2.sumHP();
+
+                if (hp1 > hp2) {
+                    gameOverReason = "Maximum turns reached. Equal minions. Player 1 has higher total HP.";
+                }
+                else if (hp2 > hp1) {
+                    gameOverReason = "Maximum turns reached. Equal minions. Player 2 has higher total HP.";
+                }
+                else {
+                    if (player1.getBudget() > player2.getBudget()) {
+                        gameOverReason = "Maximum turns reached. Equal HP. Player 1 has higher budget.";
+                    }
+                    else if (player2.getBudget() > player1.getBudget()) {
+                        gameOverReason = "Maximum turns reached. Equal HP. Player 2 has higher budget.";
+                    }
+                    else {
+                        gameOverReason = "Maximum turns reached. Completely tied.";
+                    }
+                }
+            }
+
             return true;
         }
+
 
         return false;
     }
@@ -516,109 +577,7 @@ public class GameState {
         return null; // tie
     }
 
-    // UI getters
-    public TurnSummary playTurn() {
-
-        TurnSummary summary = new TurnSummary();
-
-        startTurn();
-
-        if (currentPlayer.isBot()) {
-            botTurnAction();
-        }
-
-        // human → UI เรียก purchaseHex / spawnMinion เอง
-
-        executeMinions();
-
-        if (phase != Phase.FINISHED) {
-            endTurn();
-        }
-
-        return summary;
-    }
-    public List<MinionType> getBaseTypes() {
-        return baseTypes;
-    }
-
-    public Phase getPhase() {
-        return phase;
-    }
-
-    public Player getCurrentPlayer() {
-        return currentPlayer;
-    }
-
-    public Player getPlayer1() {
-        return player1;
-    }
-
-    public Player getPlayer2() {
-        return player2;
-    }
-
-    public Grid getBoard() {
-        return board;
-    }
-
-    public void runGame() {
-
-        while (!isGameOver()) {
-
-            startTurn();
-
-            if (currentPlayer.isBot()) {
-                botTurnAction();
-            }
-
-            executeMinions();
-
-            if (phase != Phase.FINISHED) {
-                endTurn();
-            }
-        }
-    }
-
-//    private void botTurnAction() {
-//
-//        Player p = currentPlayer;
-//
-//        // พยายาม spawn ก่อน
-//        if (!p.getMinionTypes().isEmpty()) {
-//
-//            for (String hex : p.getSpawnableHexes()) {
-//
-//                String[] parts = hex.split(",");
-//                int r = Integer.parseInt(parts[0]);
-//                int c = Integer.parseInt(parts[1]);
-//
-//                if (board.isEmpty(r, c) &&
-//                        p.getBudget() >= config.getSpawnCost()) {
-//
-//                    String typeName =
-//                            p.getMinionTypes().get(0).getName();
-//
-//                    spawnMinion(typeName, r, c);
-//                    return;
-//                }
-//            }
-//        }
-//
-//        // ถ้า spawn ไม่ได้ ค่อยลองซื้อ
-//        if (p.canPurchaseHex()) {
-//
-//            for (int r = 1; r <= 8; r++) {
-//                for (int c = 1; c <= 8; c++) {
-//
-//                    if (canPurchase(r, c)) {
-//                        purchaseHex(r, c);
-//                        return;
-//                    }
-//                }
-//            }
-//        }
-//    }
-
+    // bot
     private void botTurnAction() {
 
         Player p = currentPlayer;
@@ -631,26 +590,26 @@ public class GameState {
         boolean aggressive = budget >= maxBudget * 0.8;
         boolean enemyNearby = hasEnemyNearby(p);
 
-        // 🔥 ศัตรูอยู่ใกล้ → รีบ spawn
+        // close opponent -> spawn
         if (enemyNearby) {
             if (trySpawn(p)) return;
         }
 
-        // 💰 เงินเกิน 80% → aggressive mode
+        // budget > 80% -> aggressive mode (spawn minion and buy)
         if (aggressive) {
             if (trySpawn(p)) return;
             if (tryPurchase(p)) return;
             return;
         }
 
-        // 🗺️ map ยังเล็ก → ซื้อก่อน
+        // small map -> buy hex
         if (smallMap) {
             if (tryPurchase(p)) return;
             if (trySpawn(p)) return;
             return;
         }
 
-        // ⚖️ ปกติ → 50/50
+        // normal -> 50/50
         boolean spawnFirst = random.nextBoolean();
 
         if (spawnFirst) {
@@ -698,6 +657,8 @@ public class GameState {
 
     private boolean trySpawn(Player p) {
 
+        if (!p.canSpawn()) return false;
+
         if (p.getMinionTypes().isEmpty()) return false;
         if (p.getBudget() < config.getSpawnCost()) return false;
 
@@ -706,7 +667,7 @@ public class GameState {
         boolean enemyNearby = hasEnemyNearby(p);
         int mapSize = p.getSpawnableHexes().size();
 
-        // สร้าง weight list
+        // create weight list
         List<MinionType> types = p.getMinionTypes();
         List<Integer> weights = new ArrayList<>();
 
@@ -716,17 +677,17 @@ public class GameState {
 
             String name = t.getName();
 
-            // เงินเยอะ → Tank โอกาสสูง
+            // have many budget -> tank
             if (budget >= maxBudget * 0.8 && name.equalsIgnoreCase("Tank")) {
                 weight += 30;
             }
 
-            // ศัตรูใกล้ → Warrior โอกาสสูง
+            // closer opponet -> warrior
             if (enemyNearby && name.equalsIgnoreCase("Warrior")) {
                 weight += 25;
             }
 
-            // map ใหญ่ → Scout โอกาสสูง
+            // large map -> Scout
             if (mapSize > 12 && name.equalsIgnoreCase("Scout")) {
                 weight += 20;
             }
@@ -734,7 +695,7 @@ public class GameState {
             weights.add(weight);
         }
 
-        // เลือกแบบ weighted random
+        // select weighted random
         int totalWeight = 0;
         for (int w : weights) totalWeight += w;
 
@@ -753,7 +714,7 @@ public class GameState {
 
         String typeName = types.get(chosenIndex).getName();
 
-        // สุ่มตำแหน่ง
+        // random position
         List<String> hexes = new ArrayList<>(p.getSpawnableHexes());
         java.util.Collections.shuffle(hexes);
 
@@ -790,11 +751,11 @@ public class GameState {
 
         Player p = getCurrentPlayer();
 
-        // เลือก type แบบสุ่ม
+        // random type
         List<MinionType> types = p.getMinionTypes();
         MinionType type = types.get(new Random().nextInt(types.size()));
 
-        // หา spawnable hex ว่าง
+        // find spawnable hex must be free
         for (int r = 1; r <= 8; r++) {
             for (int c = 1; c <= 8; c++) {
                 if (canSpawnInitial(r, c)) {
@@ -813,13 +774,81 @@ public class GameState {
 
         Player p = currentPlayer;
 
-        // ต้องเป็น spawnable zone ของ player
+        // be spawnable zone of player
         if (!p.isSpawnable(r, c)) return false;
 
-        // ต้องว่าง
+        // must be free
         if (!board.isEmpty(r, c)) return false;
 
         return true;
     }
+
+    // getter UI
+    public TurnSummary playTurn() {
+
+        TurnSummary summary = new TurnSummary();
+
+        startTurn();
+
+        if (currentPlayer.isBot()) {
+            botTurnAction();
+        }
+
+        // human → UI call purchaseHex / spawnMinion
+
+        executeMinions();
+
+        if (phase != Phase.FINISHED) {
+            endTurn();
+        }
+
+        return summary;
+    }
+    public List<MinionType> getBaseTypes() {
+        return baseTypes;
+    }
+
+    public Phase getPhase() {
+        return phase;
+    }
+
+    public Player getCurrentPlayer() {
+        return currentPlayer;
+    }
+
+    public Player getPlayer1() {
+        return player1;
+    }
+
+    public Player getPlayer2() {
+        return player2;
+    }
+
+    public Grid getBoard() {
+        return board;
+    }
+
+    public String getGameOverReason() {
+        return gameOverReason;
+    }
+
+    public void runGame() {
+
+        while (!isGameOver()) {
+
+            startTurn();
+
+            if (currentPlayer.isBot()) {
+                botTurnAction();
+            }
+
+            executeMinions();
+
+            if (phase != Phase.FINISHED) {
+                endTurn();
+            }
+        }
+    }
+
 
 }

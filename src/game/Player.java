@@ -28,7 +28,7 @@ public class Player {
         this.budget = config.getInitBudget();
     }
 
-    // Set Bot
+    // set Bot
     public void setBot(boolean bot) {
         this.isBot = bot;
     }
@@ -37,7 +37,7 @@ public class Player {
         return isBot;
     }
 
-    // BUDGET
+    // budget
     public double getBudget() {
         return budget;
     }
@@ -55,14 +55,14 @@ public class Player {
     }
 
     public long getBudgetAsLong() {
-        return (long) budget;  // for Budget special variable
+        return (long) budget;
     }
 
     public long getMaxBudget() {
         return config.getMaxBudget();
     }
 
-    // TURN
+    // turn
     public long getTurnCount() {
         return turnCount;
     }
@@ -71,7 +71,7 @@ public class Player {
         turnCount++;
     }
 
-    // INTEREST RATE (Int special variable)
+    // interest rate
     public double calculateInterestRate() {
         if (budget < 1) return 0;
 
@@ -83,7 +83,7 @@ public class Player {
         return (long) calculateInterestRate();
     }
 
-    // SPAWN SYSTEM
+    // spawn system
     public boolean canSpawn() {
         return spawnsUsed < config.getMaxSpawns();
     }
@@ -95,6 +95,7 @@ public class Player {
     public void incrementSpawnsUsed() {
         spawnsUsed++;
     }
+
     public void addSpawnableHex(int r, int c) {
         spawnableHexes.add(r + "," + c);
     }
@@ -107,7 +108,7 @@ public class Player {
         return spawnableHexes;
     }
 
-    // MINIONS
+    // minion
     public List<Minion> getMinions() {
         return minions;
     }
@@ -189,21 +190,21 @@ public class Player {
         setupLocked = true;
     }
 
-    // CHECK PURCHASE PERMISSION
+    // check purchase permission
     public boolean canPurchaseHex() {
         return budget >= config.getHexPurchaseCost();
     }
 
-    // CHECK SPAWN PERMISSION
+    // check spawn permission
     public boolean canSpawnAt(int r, int c) {
 
-        // ต้องเป็น spawnable
+        // must be spawnable
         if (!isSpawnable(r, c)) return false;
 
-        // ต้องยังไม่เกิน max spawns
+        // spawns must not exceed the maximum
         if (!canSpawn()) return false;
 
-        // ต้องมีเงินพอ
+        // have enough budget
         return budget >= config.getSpawnCost();
     }
 }
