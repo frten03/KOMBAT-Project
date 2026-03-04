@@ -41,12 +41,19 @@ public class Tokenizer {
             case '/':
                 return new Token(TokenType.DIV, "/");
 
+            case '%':
+                return new Token(TokenType.MOD, "%");
+
+            case '^':
+                return new Token(TokenType.POW, "^");
+
             case '=':
                 if (pos < src.length() && src.charAt(pos) == '=') {
                     pos++;
                     return new Token(TokenType.EQ, "==");
                 }
-                throw new RuntimeException("Single '=' not allowed");
+                return new Token(TokenType.ASSIGN, "=");
+                //throw new RuntimeException("Single '=' not allowed");
 
             case '(':
                 return new Token(TokenType.LPAREN, "(");
@@ -83,6 +90,9 @@ public class Tokenizer {
 
     private Token ident() {
         int start = pos;
+
+        pos++;
+
         while (pos < src.length() && Character.isLetter(src.charAt(pos)))
             pos++;
         String s = src.substring(start, pos);

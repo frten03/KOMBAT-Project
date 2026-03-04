@@ -6,6 +6,7 @@ import strategy.ast.core.Statement;
 import strategy.ast.expr.BinaryExpr;
 import strategy.ast.expr.InfoExpr;
 import strategy.ast.expr.NumberExpr;
+import strategy.ast.expr.VarExpr;
 import strategy.ast.stmt.*;
 import strategy.tokenizer.*;
 
@@ -59,7 +60,7 @@ factor          → number | info | (expression)
         }
 
         return e;
-    }
+    }// AddSub = term ((+|-) term)* แทนที่ expression เดิม
     private Expression parseAddSub() {
         Expression e = parseTerm();
 
@@ -79,7 +80,7 @@ factor          → number | info | (expression)
         Expression e = parseFactor();
         while (true) {
             TokenType t = tz.peekToken().type;
-            if (t == TokenType.MUL || t == TokenType.DIV) {
+            if (t == TokenType.MUL || t == TokenType.DIV || t == TokenType.MOD) {
                 consume(t);
                 e = new BinaryExpr(e, t, parseFactor());
             } else break;
@@ -88,6 +89,19 @@ factor          → number | info | (expression)
     }
 
     private Expression parseFactor() {
+        Expression left = parsePower();
+
+        if (tz.peekToken().type == TokenType.POW) {   // ^
+            consume(TokenType.POW);
+            Expression right = parseFactor(); // ⚠ recursive = right associative
+            return new BinaryExpr(left, TokenType.POW, right);
+        }
+
+        return left;
+    }
+
+    // parseFactor -> parsePower
+    private Expression parsePower() {
         Token t = tz.nextToken();
 
         switch (t.type) {
@@ -120,7 +134,7 @@ factor          → number | info | (expression)
 
             case IDENT:
                 // temporary: unknown variable → 0
-                return new NumberExpr(0);
+                return new VarExpr(t.value);
 
             default:
                 throw new RuntimeException("Invalid factor: " + t.type);
@@ -136,13 +150,24 @@ factor          → number | info | (expression)
             case LBRACE -> parseBlock();
             case DONE -> {
                 consume(TokenType.DONE);
-                consume(TokenType.SEMI);
+                //consume(TokenType.SEMI);
                 yield new DoneStmt();
             }
             case MOVE -> parseMove();
             case SHOOT -> parseShoot();
+            case IDENT -> parseAssign();
+            
             default -> throw new RuntimeException("Unknown statement");
         };
+    }
+
+    private Statement parseAssign() {
+        Token name = consume(TokenType.IDENT);
+        consume(TokenType.ASSIGN);
+        Expression expr = parseExpression();
+        //consume(TokenType.SEMI);
+
+        return new AssignmentStmt(name.value, expr);
     }
 
     private Statement parseIf() {
@@ -179,7 +204,7 @@ factor          → number | info | (expression)
     private Statement parseMove() {
         consume(TokenType.MOVE);
         Direction dir = parseDirection();
-        consume(TokenType.SEMI);
+        //consume(TokenType.SEMI);
         return new MoveStmt(dir);
     }
 
@@ -187,7 +212,7 @@ factor          → number | info | (expression)
         consume(TokenType.SHOOT);
         Direction dir = parseDirection();
         Expression cost = parseExpression();
-        consume(TokenType.SEMI);
+        //consume(TokenType.SEMI);
         return new ShootStmt(dir, cost);
     }
 

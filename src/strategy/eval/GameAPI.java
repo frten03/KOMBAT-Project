@@ -11,6 +11,15 @@ public interface GameAPI {
     long nearby(Direction dir);
     long ally();
     long opponent();
+
+    // for Global var
+    long getBudget();
+    long getMaxBudget();
+    long getInterest();
+    long getSpawnsLeft();
+    long getRandom();
+    int getRow();
+    int getCol();
 }
 
 //ตัวอย่าง implement class *สามารถแก้ไขทีหลังได้ ถ้าเราคุยกันแล้วมีอะไรเปลี่ยนแปลง

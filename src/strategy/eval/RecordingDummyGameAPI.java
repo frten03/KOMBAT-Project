@@ -2,16 +2,9 @@ package strategy.eval;
 
 import strategy.ast.Direction;
 
-/**
- * RecordingDummyGameAPI
- *
- * Test double สำหรับใช้ใน JUnit tests
- * ทำหน้าที่บันทึกว่ามีการเรียกคำสั่งจาก Evaluator อะไรบ้าง
- * โดยไม่พึ่ง game logic จริง
- */
 public class RecordingDummyGameAPI implements GameAPI {
 
-    // ===== Record action calls =====
+    //  Record action calls
     public int moveCount = 0;
     public int shootCount = 0;
 
@@ -19,12 +12,54 @@ public class RecordingDummyGameAPI implements GameAPI {
     public Direction lastShootDir = null;
     public long lastShootCost = -1;
 
-    // ===== Action commands =====
+    //  Configurable state for testing
+    private long budget = 100;
+    private long maxBudget = 1000;
+    private long interest = 5;
+    private long spawnsLeft = 3;
+    private long randomValue = 42;
+    private int row = 2;
+    private int col = 3;
+
+    private long nearbyValue = 0;
+    private long allyValue = 0;
+    private long opponentValue = 0;
+
+    //  Setter methods for tests
+    public void setBudget(long budget) {
+        this.budget = budget;
+    }
+
+    public void setNearby(long value) {
+        this.nearbyValue = value;
+    }
+
+    public void setAlly(long value) {
+        this.allyValue = value;
+    }
+
+    public void setOpponent(long value) {
+        this.opponentValue = value;
+    }
+
+    public void setRandom(long value) {
+        this.randomValue = value;
+    }
+
+    public void setRowCol(int r, int c) {
+        this.row = r;
+        this.col = c;
+    }
+
+    //  Action commands
 
     @Override
     public void move(Direction dir) {
         moveCount++;
         lastMoveDir = dir;
+
+        // simulate budget deduction
+        budget -= 1;
     }
 
     @Override
@@ -32,35 +67,62 @@ public class RecordingDummyGameAPI implements GameAPI {
         shootCount++;
         lastShootDir = dir;
         lastShootCost = cost;
+
+        // simulate cost deduction (x + 1)
+        budget -= (cost + 1);
     }
 
-    // ===== Info expressions (stub behavior) =====
+    //  Info expressions
 
-    /**
-     * ใช้สำหรับทดสอบ nearby <direction>
-     * คืนค่าเป็น 1 เสมอ เพื่อให้ condition เป็น true
-     */
     @Override
     public long nearby(Direction dir) {
-        return 1;
+        return nearbyValue;
     }
 
-    /**
-     * ยังไม่ใช้ใน phase นี้
-     */
     @Override
     public long ally() {
-        return 0;
+        return allyValue;
     }
 
-    /**
-     * ใช้สำหรับทดสอบ if opponent / while opponent
-     * คืนค่าเป็น 1 เพื่อให้เข้า branch
-     */
     @Override
     public long opponent() {
-        System.out.println("GameAPI.opponent()");
-        return 1; // หรือ 0 ตาม test
+        return opponentValue;
     }
 
+    //  Special variables
+
+    @Override
+    public long getBudget() {
+        return budget;
+    }
+
+    @Override
+    public long getMaxBudget() {
+        return maxBudget;
+    }
+
+    @Override
+    public long getInterest() {
+        return interest;
+    }
+
+    @Override
+    public long getSpawnsLeft() {
+        return spawnsLeft;
+    }
+
+    @Override
+    public long getRandom() {
+        return randomValue;
+    }
+
+    @Override
+    public int getRow() {
+        return row;
+    }
+
+    @Override
+    public int getCol() {
+        return col;
+    }
 }

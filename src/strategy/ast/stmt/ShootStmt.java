@@ -16,7 +16,17 @@ public class ShootStmt extends ActionStmt {
     @Override
     public void eval(EvalContext ctx) {
         if (ctx.isDone()) return;
+
         long c = cost.eval(ctx);
+        if (ctx.isDone()) return;
+
+        long totalCost = c + 1;
+        long budget = ctx.api.getBudget();
+
+        if (budget < totalCost) {
+            return; // NO-OP, ไม่ terminate
+        }
+
         ctx.api.shoot(dir, c);
     }
 }
