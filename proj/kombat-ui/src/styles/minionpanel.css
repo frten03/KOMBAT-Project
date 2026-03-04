@@ -1,0 +1,32 @@
+.minion-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;   /* เริ่มจากซ้าย */
+    gap: 8px;
+    justify-self: end;
+    width: 220px;
+}
+
+.minion-slot {
+    display: flex;
+    flex-direction: column;   /* รูปบน ชื่อล่าง */
+    align-items: center;      /* 👈 จัดกลาง */
+    gap: 8px;
+}
+
+.minion-avatar {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+}
+
+.minion-name {
+    text-align: center;       /* 👈 ชื่ออยู่กลาง */
+    font-size: 18px;
+    color: var(--text-primary);
+}
+
+.spawn-cost {
+    margin-top: 10px;
+    font-size: 20px;
+}

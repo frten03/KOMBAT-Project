@@ -1,0 +1,34 @@
+.board {
+    position: relative;
+    margin: 0 auto;
+}
+
+.hex polygon {
+    stroke: #E5E7EB;
+    stroke-width: 2;
+    transition: 0.2s ease;
+}
+
+/* ===== Owner ===== */
+
+.hex.p1 polygon {
+    fill: #8CABDF;   /* ซ้ายบน */
+}
+
+.hex.p2 polygon {
+    fill: #F87171;   /* ขวาล่าง */
+}
+
+.hex.none polygon {
+    fill: #9CA3AF;   /* เทาเข้มขึ้น */
+}
+
+/* ===== Selectable ===== */
+
+.hex.selectable polygon {
+    fill: #FFFFFF;
+}
+
+.hex.selectable:hover polygon {
+    fill: #F3F4F6;
+}

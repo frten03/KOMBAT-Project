@@ -1,0 +1,54 @@
+.start-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    height: 100%;
+}
+.button-group {
+    display: flex;
+    flex-direction: column;  /* เพิ่มอันนี้ */
+    align-items: center;
+    gap: 32px;
+    margin-top: 40px;
+}
+
+.btn {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 40px;     /* ตาม body scale */
+    font-weight: 500;
+
+    padding: 18px 24px;
+    border-radius: var(--radius-lg);
+    border: none;
+
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-soft);
+}
+
+/* ===== Auto ===== */
+.btn.auto {
+    background-color: var(--btn-auto);
+    color: var(--btn-text);
+}
+
+/* ===== Solitaire ===== */
+.btn.solitaire {
+    background-color: var(--btn-solitaire);
+    color: var(--btn-text);
+}
+
+/* ===== Duel ===== */
+.btn.duel {
+    background-color: var(--btn-duel);
+    color: var(--btn-text);
+}
+
+/* Hover */
+.btn:hover {
+    transform: translateY(-4px);
+    filter: brightness(1.05);
+}

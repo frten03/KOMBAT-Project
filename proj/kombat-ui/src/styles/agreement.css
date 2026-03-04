@@ -1,0 +1,120 @@
+/* ===============================
+   Agreement Page Layout
+=================================*/
+
+.agreement-page {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.agreement-content {
+    width: 100%;
+    max-width: 1200px;
+    text-align: center;
+    padding-top: 60px;
+    padding-bottom: 40px;
+}
+
+/* ===============================
+   Rules Section
+=================================*/
+
+/* ===============================
+   Rules Section (ลดลง 1 step)
+=================================*/
+
+.agreement-rules-title {
+    font-size: 40px;   /* เดิม 48 */
+    margin-bottom: 16px;
+}
+
+.agreement-rules-desc {
+    font-size: 24px;   /* เดิม 32 */
+    line-height: 1.4;
+}
+
+.agreement-minion-title {
+    font-size: 32px;   /* เดิม 40 */
+    margin-top: 50px;
+    margin-bottom: 24px;
+}
+
+.agreement-minion-list {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.agreement-minion-card {
+    width: 160px;
+    padding: 20px 16px;
+    border-radius: 24px;
+
+    background: rgba(255, 255, 255, 0.85); /* 0.85 = ทึบ 85% */
+    box-shadow: var(--shadow-soft);
+
+    transition: transform 0.2s ease;
+}
+
+.agreement-minion-card:hover {
+    transform: translateY(-6px);
+}
+
+.agreement-minion-img {
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
+    margin-bottom: 16px;
+}
+
+.agreement-minion-name {
+    font-size: 28px;   /* คงเดิม */
+    margin-bottom: 6px;
+    color: #1E293B;    /* เทาเข้ม อ่านง่าย */
+}
+
+.agreement-minion-def {
+    font-size: 24px;   /* คงเดิม */
+    color: #475569;    /* เทากลาง */
+}
+
+/* ===============================
+   Buttons
+=================================*/
+
+.agreement-actions {
+    margin-top: 60px;
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+}
+
+.agreement-btn {
+    padding: 14px 44px;
+    border-radius: var(--radius-lg);
+    border: none;
+    cursor: pointer;
+
+    font-family: 'Fredoka', sans-serif;
+    font-size: 26px;
+    font-weight: 500;
+
+    color: var(--btn-text);
+    box-shadow: var(--shadow-soft);
+    transition: all 0.2s ease;
+}
+
+.agreement-btn:hover {
+    transform: translateY(-4px);
+    opacity: 0.95;
+}
+
+.agreement-btn-disagree {
+    background: var(--btn-duel);
+}
+
+.agreement-btn-agree {
+    background: var(--btn-solitaire);
+}
