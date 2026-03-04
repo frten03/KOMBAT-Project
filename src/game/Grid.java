@@ -51,4 +51,7 @@ public class Grid {
         return list;
     }
 
+    public boolean isEmpty(int r, int c) {
+        return board[r][c] == null;
+    }
 }

@@ -1,4 +1,23 @@
 package game;
 
 public class MinionType {
+
+    private final String name;
+    private final int defense;
+    private final String strategySource;
+
+    public MinionType(String name, int defense, String strategySource) {
+        this.name = name;
+        this.defense = defense;
+        this.strategySource = strategySource;
+    }
+
+    public String getName() { return name; }
+    public int getDefense() { return defense; }
+    public String getStrategySource() { return strategySource; }
+
+    // method แก้ค่า immutable
+    public MinionType withConfig(int newDefense, String newStrategySource) {
+        return new MinionType(this.name, newDefense, newStrategySource);
+    }
 }

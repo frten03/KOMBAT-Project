@@ -6,6 +6,7 @@ public class Minion {
     private int hp;
     private int defense;
     private final Player owner;
+    private MinionType type;
 
     public Minion(int row, int col, int hp, int defense, Player owner) {
         if (hp <= 0) {
@@ -19,6 +20,17 @@ public class Minion {
         this.hp = hp;
         this.defense = defense;
         this.owner = owner;
+    }
+
+    public Minion(int row, int col, int hp,
+                  MinionType type, Player owner) {
+
+        this(row, col, hp, type.getDefense(), owner);
+        this.type = type;
+    }
+
+    public MinionType getType() {
+        return type;
     }
 
     public int getRow() {
@@ -46,9 +58,13 @@ public class Minion {
         this.col = c;
     }
 
-    public void takeDamage(int dmg) {
-        int real = Math.max(0, dmg - defense);
-        hp -= real;
+    public boolean isAlive() {
+        return hp > 0;
+    }
+
+    public void takeDamage(int expenditure) {
+        int reduced = Math.max(1, expenditure - getDefense());
+        hp = Math.max(0, hp - reduced);
     }
 
     @Override

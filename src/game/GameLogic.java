@@ -5,16 +5,30 @@ import strategy.ast.Direction;
 public class GameLogic {
 
     private final Grid board;
+    private final Player player1;
+    private final Player player2;
+    private final GameConfig config;
 
-    public GameLogic(Grid board) {
+    public GameLogic(Grid board, Player p1, Player p2, GameConfig config) {
         this.board = board;
+        this.player1 = p1;
+        this.player2 = p2;
+        this.config = config;
     }
 
     public Grid getBoard() {
         return board;
     }
 
-    // ===== movement =====
+    public Player getPlayer(Player owner) {
+        return owner;
+    }
+
+    public GameConfig getConfig() {
+        return config;
+    }
+
+    // movement
     public boolean canMove(Minion m, Direction dir) {
         int nr = m.getRow() + dir.dr;
         int nc = m.getCol() + dir.dc;
@@ -46,7 +60,7 @@ public class GameLogic {
     public boolean shoot(Minion attacker, Direction dir, long cost) {
         Player p = attacker.getOwner();
 
-        if (!p.spendBudget(cost)) return false;
+        if (!p.spendBudget(cost+1)) return false;
 
         int tr = attacker.getRow() + dir.dr;
         int tc = attacker.getCol() + dir.dc;

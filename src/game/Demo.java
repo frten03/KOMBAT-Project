@@ -5,45 +5,46 @@ import strategy.parser.Parser;
 import strategy.tokenizer.Tokenizer;
 import strategy.ast.core.Statement;
 
+import java.util.HashMap;
+
 public class Demo {
 
     public static void main(String[] args) {
-        System.out.println("=== DEMO BEFORE START ===");
 
+        // Parser error test
         String badStrategy = """
             if (opponent) then { move up; }
         """;
 
         try {
             Parser parser = new Parser(new Tokenizer(badStrategy));
-            parser.parseStatement();   // ← ใช้อันนี้แทน parse()
-            System.out.println("❌ SHOULD NOT REACH HERE");
+            parser.parseStatement();
+            System.out.println("SHOULD NOT REACH HERE");
         } catch (RuntimeException e) {
             System.out.println("Parse failed as expected:");
             System.out.println(e.getMessage());
         }
 
-        System.out.println("=== DEMO BEFORE END ===");
+        System.out.println("DEMO START");
 
-        System.out.println("=== DEMO START ===");
+        // config setup
+        GameConfig config = new GameConfig(
+                100,
+                1000,
+                100,
+                50,
+                10,
+                1000,
+                5,
+                10,
+                5
+        );
 
-        // ----- Game setup -----
-        Grid grid = new Grid(8);
-        Player p1 = new Player(20);
-        Player p2 = new Player(20);
+        GameState gameState = new GameState(config, GameMode.DUEL);
 
-        Minion m1 = new Minion(3, 3, 10, 1, p1);
-        Minion m2 = new Minion(2, 3, 6, 0, p2);
+        Player p1 = gameState.getPlayer1();
+        Player p2 = gameState.getPlayer2();
 
-        // ally player 1
-        Minion m3 = new Minion(3, 4, 8, 3, p1);
-
-        grid.addMinion(m1);
-        grid.addMinion(m2);
-
-        grid.addMinion(m3);
-
-        GameLogic logic = new GameLogic(grid);
 
         //----- Strategy source -----
         // check block stmt
@@ -103,21 +104,65 @@ public class Demo {
 //                }
 //        """;
 
+        // Game setup
+        MinionType warrior = new MinionType(
+                "Warrior",
+                1,
+                src // ใช้ strategy เดียวกับที่กำลัง test
+        );
+
+        p1.addMinionType(warrior);
+        p2.addMinionType(warrior);
+
+        // lock setup
+        gameState.lockSetupPhase();
+        System.out.println("Setup locked.");
+
+        gameState.startTurn();
+
+        boolean spawn1 = gameState.spawnMinion("Warrior", 0, 0);
+        System.out.println("P1 spawn success = " + spawn1);
+
+        gameState.endTurn();
+
+        gameState.startTurn();
+
+        boolean spawn2 = gameState.spawnMinion("Warrior", 7, 7);
+        System.out.println("P2 spawn success = " + spawn2);
+
+        gameState.endTurn();
+
+        if (!spawn1 || !spawn2) {
+            System.out.println("Spawn failed. Stop demo.");
+            return;
+        }
+
+        Minion m1 = p1.getMinions().get(0);
+        Minion m2 = p2.getMinions().get(0);
+
+        System.out.println("After spawn:");
+        System.out.println("P1 budget = " + p1.getBudget());
+        System.out.println("P1 minions = " + p1.getMinions().size());
+
+        Grid grid = gameState.getBoard();
+
+        GameLogic logic = new GameLogic(grid, p1, p2, config);
+
         Parser parser = new Parser(new Tokenizer(src));
         Statement strategy = parser.parseStatement();
 
-        // ----- Bridge -----
+        // Bridge
         GameAPI api = new RealGameAPI(logic, m1);
-        EvalContext ctx = new EvalContext(api);
+        EvalContext ctx = new EvalContext(api, new HashMap<>());
 
-        // ----- Execute strategy -----
+        // Execute strategy
         strategy.eval(ctx);
 
-        // ----- Result -----
+        // Result
         System.out.println("After strategy:");
         System.out.println(m1);
         System.out.println(m2);
-        System.out.println(m3);
+//        System.out.println(m3);
         System.out.println("P1 budget = " + p1.getBudget());
 
         System.out.println("=== DEMO END ===");
