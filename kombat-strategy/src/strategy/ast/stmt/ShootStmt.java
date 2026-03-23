@@ -2,6 +2,7 @@ package strategy.ast.stmt;
 
 import strategy.ast.Direction;
 import strategy.ast.core.Expression;
+import strategy.eval.ActionLog;
 import strategy.eval.EvalContext;
 
 public class ShootStmt extends ActionStmt {
@@ -28,5 +29,10 @@ public class ShootStmt extends ActionStmt {
         }
 
         ctx.api.shoot(dir, c);
+        ctx.getResult().addAction(
+                new ActionLog(ActionLog.Type.SHOOT, dir, c)
+        );
+
+        ctx.getResult().setDone(true);
     }
 }

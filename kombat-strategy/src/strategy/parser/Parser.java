@@ -173,7 +173,9 @@ factor          → number | info | (expression)
     private Statement parseIf() {
         consume(TokenType.IF);
 
+        consume(TokenType.LPAREN);
         Expression cond = parseExpression();
+        consume(TokenType.RPAREN);
 
         consume(TokenType.THEN);
         Statement thenStmt = parseStatement();
@@ -187,8 +189,13 @@ factor          → number | info | (expression)
 
     private Statement parseWhile() {
         consume(TokenType.WHILE);
+
+        consume(TokenType.LPAREN);
         Expression cond = parseExpression();
+        consume(TokenType.RPAREN);
+
         Statement body = parseStatement();
+
         return new WhileStmt(cond, body);
     }
 

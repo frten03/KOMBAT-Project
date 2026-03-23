@@ -16,55 +16,55 @@ public class ParserTest {
 
     @Test
     void testParseMove() {
-        assertNotNull(parse("move up;"));
-        assertNotNull(parse("move downright;"));
+        assertNotNull(parse("move up"));
+        assertNotNull(parse("move downright"));
     }
 
     @Test
     void testParseShoot() {
-        assertNotNull(parse("shoot up 10;"));
-        assertNotNull(parse("shoot down (3+4)*2;"));
+        assertNotNull(parse("shoot up 10"));
+        assertNotNull(parse("shoot down (3+4)*2"));
     }
 
     @Test
     void testParseDone() {
-        assertNotNull(parse("done;"));
+        assertNotNull(parse("done"));
     }
 
     @Test
     void testParseIf() {
-        assertNotNull(parse("if 1 then move up; else done;"));
+        assertNotNull(parse("if (1) then move up else done"));
     }
 
     @Test
     void testParseWhile() {
-        assertNotNull(parse("while 1 move up;"));
+        assertNotNull(parse("while (opponent) shoot up 10 move up"));
     }
 
     @Test
     void testParseBlock() {
-        assertNotNull(parse("{ move up; move down; }"));
+        assertNotNull(parse("{ move up move down }"));
     }
 
     @Test
     void testInvalidSyntax() {
         assertThrows(RuntimeException.class,
-                () -> parse("move;")); // missing direction
+                () -> parse("move")); // missing direction
     }
 
     @Test
     void testInvalidToken() {
         assertThrows(RuntimeException.class,
-                () -> parse("fly up;"));
+                () -> parse("fly up"));
     }
     // 1️⃣ ขาด then
     @Test
     void testMissingThen() {
         String src = """
                 if 1 {
-                    move up;
+                    move up
                 } else {
-                    done;
+                    done
                 }
                 """;
 
@@ -72,20 +72,12 @@ public class ParserTest {
     }
 
     // 2️⃣ ขาด semicolon
-    @Test
-    void testMissingSemicolon() {
-        String src = """
-                move up
-                """;
-
-        assertThrows(RuntimeException.class, () -> parse(src));
-    }
 
     // 3️⃣ nearby ไม่มี direction
     @Test
     void testNearbyMissingDirection() {
         String src = """
-                if nearby == 1 then move up; else done;
+                if nearby == 1 then move up else done
                 """;
 
         assertThrows(RuntimeException.class, () -> parse(src));
@@ -95,7 +87,7 @@ public class ParserTest {
     @Test
     void testSingleEqualsInsteadOfDoubleEquals() {
         String src = """
-                if nearby up = 1 then move up; else done;
+                if nearby up = 1 then move up else done
                 """;
 
         assertThrows(RuntimeException.class, () -> parse(src));

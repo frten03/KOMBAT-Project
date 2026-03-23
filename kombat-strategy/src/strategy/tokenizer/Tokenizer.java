@@ -67,9 +67,9 @@ public class Tokenizer {
             case '}':
                 return new Token(TokenType.RBRACE, "}");
 
-            case ';':
+            /**case ';':
                 return new Token(TokenType.SEMI, ";");
-
+            **/
             default:
                 throw new RuntimeException("Unexpected char: " + c);
         }
@@ -93,7 +93,8 @@ public class Tokenizer {
 
         pos++;
 
-        while (pos < src.length() && Character.isLetter(src.charAt(pos)))
+        while (pos < src.length() &&
+                Character.isLetterOrDigit(src.charAt(pos)))
             pos++;
         String s = src.substring(start, pos);
 

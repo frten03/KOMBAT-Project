@@ -8,6 +8,7 @@ public class EvalContext {
     public final GameAPI api;
     private final Map<String, Long> localVars = new HashMap<>();
     private final Map<String, Long> globalVars;
+    private ActionResult result = new ActionResult();
 
     public EvalContext(GameAPI api, Map<String, Long> globalVars) {
         this.api = api;
@@ -79,6 +80,10 @@ public class EvalContext {
 
     public TerminationReason getTerminationReason() {
         return terminationReason;
+    }
+
+    public ActionResult getResult() {
+        return result;
     }
 
 }

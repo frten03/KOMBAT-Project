@@ -8,7 +8,6 @@ public enum TokenType {
     ASSIGN,
     LPAREN, RPAREN,
     LBRACE, RBRACE,
-    SEMI,
     EOF,
     MOVE, SHOOT,
     UP, DOWN, UPLEFT, UPRIGHT, DOWNLEFT, DOWNRIGHT,
