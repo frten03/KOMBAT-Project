@@ -102,13 +102,15 @@ factor          → number | info | (expression)
 
     // parseFactor -> parsePower
     private Expression parsePower() {
-        Token t = tz.nextToken();
+        Token t = tz.peekToken();
 
         switch (t.type) {
             case NUMBER:
+                consume(TokenType.NUMBER);
                 return new NumberExpr(Long.parseLong(t.value));
 
             case LPAREN: {
+                consume(TokenType.LPAREN);
                 Expression e = parseExpression();
                 consume(TokenType.RPAREN);
                 return e;
@@ -118,21 +120,25 @@ factor          → number | info | (expression)
 
             case OPPONENT:
                 // opponent → delegate to GameAPI later
+                consume(TokenType.OPPONENT);
                 return new InfoExpr(InfoExpr.Kind.OPPONENT, null);
 
             case NEARBY: {
+                consume(TokenType.NEARBY);
                 Direction dir = parseDirection();
                 return new InfoExpr(InfoExpr.Kind.NEARBY, dir);
 
             }
 
             case ALLY:
+                consume(TokenType.ALLY);
                 return new InfoExpr(InfoExpr.Kind.ALLY, null);
 
 
             // ===== IDENTIFIER (fallback) =====
 
             case IDENT:
+                consume(TokenType.IDENT);
                 // temporary: unknown variable → 0
                 return new VarExpr(t.value);
 
@@ -141,6 +147,16 @@ factor          → number | info | (expression)
         }
     }
 
+
+    public Statement parseStrategy() {
+        List<Statement> stmts = new ArrayList<>();
+
+        while (tz.peekToken().type != TokenType.EOF) {
+            stmts.add(parseStatement());
+        }
+
+        return new BlockStmt(stmts);
+    }
 
     public Statement parseStatement() {
         Token t = tz.peekToken();

@@ -23,10 +23,10 @@ public class MoveStmt extends ActionStmt {
             return;
         }
 
+        ctx.api.move(dir);
+
         ctx.getResult().addAction(
                 new ActionLog(ActionLog.Type.MOVE, dir, 0)
         );
-
-        ctx.getResult().setDone(true);
     }
 }

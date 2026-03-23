@@ -1,6 +1,7 @@
-package strategy.eval;
+package test.unit.testutil;
 
 import strategy.ast.Direction;
+import strategy.eval.GameAPI;
 
 public class RecordingDummyGameAPI implements GameAPI {
 

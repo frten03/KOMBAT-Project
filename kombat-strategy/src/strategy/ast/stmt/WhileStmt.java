@@ -26,7 +26,7 @@ public class WhileStmt implements Statement {
             if (condition <= 0) return;
 
             if (counter >= 10000) {
-                //ctx.terminate(EvalContext.TerminationReason.LOOP_LIMIT);
+                ctx.terminate(EvalContext.TerminationReason.LOOP_LIMIT);
                 return;
             }
 

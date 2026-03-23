@@ -1,10 +1,11 @@
-package strategy.parser;
+package test.unit.parser;
 
 import org.junit.jupiter.api.Test;
 import strategy.ast.core.Expression;
-import strategy.eval.DummyGameAPI;
 import strategy.eval.EvalContext;
+import strategy.parser.Parser;
 import strategy.tokenizer.Tokenizer;
+import test.unit.testutil.DummyGameAPI;
 
 import java.util.HashMap;
 

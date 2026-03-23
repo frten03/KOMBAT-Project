@@ -29,10 +29,9 @@ public class ShootStmt extends ActionStmt {
         }
 
         ctx.api.shoot(dir, c);
+
         ctx.getResult().addAction(
                 new ActionLog(ActionLog.Type.SHOOT, dir, c)
         );
-
-        ctx.getResult().setDone(true);
     }
 }

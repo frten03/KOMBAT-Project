@@ -1,7 +1,8 @@
-package strategy.parser;
+package test.unit.parser;
 
 import org.junit.jupiter.api.Test;
 import strategy.ast.core.Statement;
+import strategy.parser.Parser;
 import strategy.tokenizer.Tokenizer;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,7 +39,7 @@ public class ParserTest {
 
     @Test
     void testParseWhile() {
-        assertNotNull(parse("while (opponent) shoot up 10 move up"));
+        assertNotNull(parse("while (opponent) {shoot up 10 move up}"));
     }
 
     @Test

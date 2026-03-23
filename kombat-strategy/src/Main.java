@@ -3,7 +3,7 @@ import strategy.tokenizer.Tokenizer;
 import strategy.ast.core.Statement;
 import strategy.eval.EvalContext;
 import strategy.eval.GameAPI;
-import strategy.eval.DummyGameAPI;
+import test.unit.testutil.DummyGameAPI;
 
 import java.util.HashMap;
 
