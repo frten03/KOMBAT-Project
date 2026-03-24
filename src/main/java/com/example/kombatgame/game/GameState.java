@@ -1,5 +1,8 @@
 package com.example.kombatgame.game;
 
+import com.example.kombatgame.game.DefaultStrategy.*;
+import com.example.kombatgame.strategy.parser.Parser;
+import com.example.kombatgame.strategy.tokenizer.Tokenizer;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -116,83 +119,39 @@ public class GameState {
 
     // default minion
     private void initBaseTypes() {
+
         baseTypes = new ArrayList<>();
 
         baseTypes.add(new MinionType(
-                "Warrior",
+                "Assault",
                 5,
-                DEFAULT_STRATEGY.replace("baseCost", "8")
+                AssaultStrategy.SOURCE
         ));
 
         baseTypes.add(new MinionType(
-                "Archer",
+                "Trickster",
                 3,
-                DEFAULT_STRATEGY.replace("baseCost", "10")
+                TricksterStrategy.SOURCE
         ));
 
         baseTypes.add(new MinionType(
                 "Tank",
                 8,
-                DEFAULT_STRATEGY.replace("baseCost", "16")
+                TankStrategy.SOURCE
         ));
 
         baseTypes.add(new MinionType(
                 "Sniper",
                 2,
-                DEFAULT_STRATEGY.replace("baseCost", "14")
+                SniperStrategy.SOURCE
         ));
 
         baseTypes.add(new MinionType(
                 "Scout",
                 1,
-                DEFAULT_STRATEGY.replace("baseCost", "4")
+                ScoutStrategy.SOURCE
         ));
     }
-
-    private static final String DEFAULT_STRATEGY = """
-            {
-                op = opponent
-            
-                if (Budget - 2) then {} else done
-            
-                if (op)
-                then {
-                    dir = op % 10
-            
-                    if (op / 10 - 1)
-                    then
-                        if (dir - 5) then move downleft
-                        else if (dir - 4) then move down
-                        else if (dir - 3) then move downright
-                        else if (dir - 2) then move upright
-                        else if (dir - 1) then move up
-                        else move upleft
-                    else {
-                        cost = baseCost
-            
-                        if (Budget - cost)
-                        then
-                            if (dir - 5) then shoot downleft cost
-                            else if (dir - 4) then shoot down cost
-                            else if (dir - 3) then shoot downright cost
-                            else if (dir - 2) then shoot upright cost
-                            else if (dir - 1) then shoot up cost
-                            else shoot upleft cost
-                        else move up
-                    }
-                }
-                else {
-                    r = random % 6
-            
-                    if (r - 5) then move downleft
-                    else if (r - 4) then move down
-                    else if (r - 3) then move downright
-                    else if (r - 2) then move upright
-                    else if (r - 1) then move up
-                    else move upleft
-                }
-            }
-            """;
 
     // setup phase
     public boolean initialSpawn(String typeName, int r, int c) {
@@ -395,6 +354,14 @@ public class GameState {
     ) {
         if (player == null) return false;
         if (phase != Phase.SETUP) return false;
+        
+        try {
+            Parser parser = new Parser(new Tokenizer(newStrategy));
+            parser.parseStrategy();
+        } catch (Exception e) {
+            System.out.println("Invalid strategy from UI: " + e.getMessage());
+            return false;
+        }
 
         MinionType oldType = player.getTypeByName(typeName);
         if (oldType == null) return false;

@@ -1,5 +1,7 @@
 package com.example.kombatgame.game;
 
+import lombok.Setter;
+
 public class Minion {
     private int row;
     private int col;
@@ -7,6 +9,13 @@ public class Minion {
     private int defense;
     private final Player owner;
     private MinionType type;
+
+    @Setter
+    private boolean strategyBroken = false;
+
+    public boolean isStrategyBroken() {
+        return strategyBroken;
+    }
 
     public Minion(int row, int col, int hp, int defense, Player owner) {
         if (hp <= 0) {

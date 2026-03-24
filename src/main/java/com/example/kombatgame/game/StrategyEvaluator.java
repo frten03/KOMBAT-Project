@@ -26,12 +26,19 @@ public class StrategyEvaluator {
                     state.getPlayer2(),
                     state.getConfig()
             );
+
             GameAPI api = new RealGameAPI(logic, m);
             EvalContext ctx = new EvalContext(api, new HashMap<>());
 
             stmt.eval(ctx);
+
         } catch (Exception e) {
-            System.out.println("Strategy error: " + e.getMessage());
+
+            System.err.println("[STRATEGY PARSE ERROR]");
+            System.err.println("Minion: " + m.getType().getName());
+            System.err.println("Error: " + e.getMessage());
+
+            m.setStrategyBroken(true);
         }
     }
 }
