@@ -1,13 +1,14 @@
 package test.unit.eval;
 
 import org.junit.jupiter.api.Test;
+import strategy.ast.Direction;
 import strategy.ast.core.Expression;
 import strategy.ast.core.Statement;
+import strategy.eval.ActionLog;
 import strategy.eval.EvalContext;
 import strategy.parser.Parser;
 import strategy.tokenizer.Tokenizer;
-import test.unit.testutil.DummyGameAPI;
-import test.unit.testutil.RecordingDummyGameAPI;
+import test.unit.testutil.RecordGameAPI;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,9 +17,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class EvaluatorTest {
 
-    //helper
     private EvalContext run(String src) {
-        DummyGameAPI api = new DummyGameAPI();
+        RecordGameAPI api = new RecordGameAPI();
         EvalContext ctx = new EvalContext(api, new HashMap<>());
         runWith(ctx, src);
         return ctx;
@@ -30,7 +30,7 @@ public class EvaluatorTest {
         s.eval(ctx);
     }
 
-    // Basic execution tests
+    //Basic execution
 
     @Test
     void testMoveExecutes() {
@@ -40,7 +40,7 @@ public class EvaluatorTest {
 
     @Test
     void testMoveBudgetInsufficientTerminates() {
-        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
+        RecordGameAPI api = new RecordGameAPI();
         api.setBudget(0);
 
         EvalContext ctx = new EvalContext(api, new HashMap<>());
@@ -59,14 +59,14 @@ public class EvaluatorTest {
 
     @Test
     void testShootBudgetInsufficientNoTerminate() {
-        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
-        api.setBudget(5); // need 6 (5 + 1)
+        RecordGameAPI api = new RecordGameAPI();
+        api.setBudget(5);
 
         EvalContext ctx = new EvalContext(api, new HashMap<>());
         runWith(ctx, "shoot up 5");
 
         assertFalse(ctx.isDone());
-        assertEquals(0, api.shootCount);
+        assertEquals(0, api.shootCount); // ✔ ใช้ counter
     }
 
     @Test
@@ -77,16 +77,15 @@ public class EvaluatorTest {
 
     @Test
     void testDoneStopsFurtherExecution() {
-        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
+        RecordGameAPI api = new RecordGameAPI();
         EvalContext ctx = new EvalContext(api, new HashMap<>());
 
         runWith(ctx, "done move up");
 
-        assertEquals(0, ((RecordingDummyGameAPI) ctx.api).moveCount);
+        assertEquals(0, api.moveCount);
     }
 
-    // If / While
-
+    // ===== If / While =====
 
     @Test
     void testIfTrueExecutes() {
@@ -102,7 +101,7 @@ public class EvaluatorTest {
 
     @Test
     void testIfBranchEffect() {
-        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
+        RecordGameAPI api = new RecordGameAPI();
         EvalContext ctx = new EvalContext(api, new HashMap<>());
 
         runWith(ctx, "if (1) then move up else shoot down 5");
@@ -118,15 +117,9 @@ public class EvaluatorTest {
     }
 
     @Test
-    void testWhileLimitDoesNotCrash() {
-        //EvalContext ctx = run("while 1 move up");
-        assertDoesNotThrow(() -> run("while (1) move up"));
-    }
-
-    @Test
-    void testWhileLoopLimitTerminates() {
-        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
-        api.setBudget(20000); // สำคัญมาก
+    void testWhileLimitTerminates() {
+        RecordGameAPI api = new RecordGameAPI();
+        api.setBudget(20000);
 
         EvalContext ctx = new EvalContext(api, new HashMap<>());
 
@@ -138,9 +131,7 @@ public class EvaluatorTest {
                 ctx.getTerminationReason());
     }
 
-
-    // Division by zero
-
+    // ===== Division =====
 
     @Test
     void testDivisionByZeroTerminates() {
@@ -163,12 +154,10 @@ public class EvaluatorTest {
         EvalContext ctx = run("x = 10/0 y = 5");
 
         assertTrue(ctx.isDone());
-        assertEquals(0, ctx.getVariable("y")); // ต้องไม่ execute ต่อ
+        assertEquals(0, ctx.getVariable("y"));
     }
 
-
-    // Special variables
-
+    // ===== Special variables =====
 
     @Test
     void testAssignSpecialNoEffect() {
@@ -177,8 +166,8 @@ public class EvaluatorTest {
     }
 
     @Test
-    void testReadSpecialVariable() {
-        DummyGameAPI api = new DummyGameAPI();
+    void testReadBudget() {
+        RecordGameAPI api = new RecordGameAPI();
         api.setBudget(123);
 
         EvalContext ctx = new EvalContext(api, new HashMap<>());
@@ -187,9 +176,7 @@ public class EvaluatorTest {
         assertEquals(123, ctx.getVariable("x"));
     }
 
-
-    // Local variables
-
+    // ===== Local / Global =====
 
     @Test
     void testLocalVariable() {
@@ -197,14 +184,10 @@ public class EvaluatorTest {
         assertEquals(5, ctx.getVariable("x"));
     }
 
-
-    // Global variables
-
-
     @Test
     void testGlobalVariable() {
         Map<String, Long> globals = new HashMap<>();
-        DummyGameAPI api = new DummyGameAPI();
+        RecordGameAPI api = new RecordGameAPI();
         EvalContext ctx = new EvalContext(api, globals);
 
         runWith(ctx, "X = 10");
@@ -216,8 +199,8 @@ public class EvaluatorTest {
     void testSharingGlobalVariableBetweenContexts() {
         Map<String, Long> globals = new HashMap<>();
 
-        DummyGameAPI api1 = new DummyGameAPI();
-        DummyGameAPI api2 = new DummyGameAPI();
+        RecordGameAPI api1 = new RecordGameAPI();
+        RecordGameAPI api2 = new RecordGameAPI();
 
         EvalContext ctx1 = new EvalContext(api1, globals);
         EvalContext ctx2 = new EvalContext(api2, globals);
@@ -227,86 +210,15 @@ public class EvaluatorTest {
         assertEquals(7, ctx2.getVariable("X"));
     }
 
-
-    // RecordingDummyGameAPI tests
-
-
     @Test
-    void testRecordingMove() {
-        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
-        EvalContext ctx = new EvalContext(api, new HashMap<>());
-
-        runWith(ctx, "move up");
-
-        assertEquals(1, api.moveCount);
-        assertEquals(strategy.ast.Direction.UP, api.lastMoveDir);
-    }
-
-    @Test
-    void testRecordingShoot() {
-        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
-        EvalContext ctx = new EvalContext(api, new HashMap<>());
-
-        runWith(ctx, "shoot down 5");
-
-        assertEquals(1, api.shootCount);
-        assertEquals(strategy.ast.Direction.DOWN, api.lastShootDir);
-        assertEquals(5, api.lastShootCost);
-    }
-    // EQ(==) test
-    @Test
-    void testEquality() {
-        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
-        EvalContext ctx1 = new EvalContext(api, new HashMap<>());
-        Parser p1 = new Parser(new Tokenizer("1 == 1"));
-        Expression e1 = p1.parseExpression();
-        EvalContext ctx2 = new EvalContext(api, new HashMap<>());
-        Parser p2 = new Parser(new Tokenizer("1 == 2"));
-        Expression e2 = p2.parseExpression();
-        assertEquals(1, e1.eval(ctx1));
-        assertEquals(0, e2.eval(ctx2));
-    }
-
-    // Nearby comparison
-
-
-    @Test
-    void debugNearbyValue() {
-        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
-        api.setNearby(1);
+    void testNearbyTrueBranch() {
+        RecordGameAPI api = new RecordGameAPI();
+        api.setNearby(strategy.ast.Direction.UPRIGHT, 1);
 
         EvalContext ctx = new EvalContext(api, new HashMap<>());
 
-        Parser p = new Parser(new Tokenizer("nearby upright"));
-        Expression e = p.parseExpression();
-
-        assertEquals(1, e.eval(ctx)); // ← ถ้า fail = parser / info expr พัง
-    }
-
-    @Test
-    void debugNearbyEquality() {
-        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
-        api.setNearby(1);
-
-        EvalContext ctx = new EvalContext(api, new HashMap<>());
-
-        Parser p = new Parser(new Tokenizer("nearby upright == 1"));
-        Expression e = p.parseExpression();
-
-        assertEquals(1, e.eval(ctx)); // ← ถ้า FAIL = parser precedence พัง
-    }
-
-    @Test
-    void testNearbyCompareBranch() {
-        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
-        api.setNearby(1);  // condition true
-
-        EvalContext ctx = new EvalContext(api, new HashMap<>());
-
-        String src =
-                "if (nearby upright == 1) then move upleft else shoot upright 2";
-
-        runWith(ctx, src);
+        runWith(ctx,
+                "if (nearby upright) then {move upleft done } else {shoot upright 2 done}");
 
         assertEquals(1, api.moveCount);
         assertEquals(0, api.shootCount);
@@ -314,43 +226,123 @@ public class EvaluatorTest {
 
     @Test
     void testNearbyFalseBranch() {
-        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
-        api.setNearby(0);
+        RecordGameAPI api = new RecordGameAPI();
+        api.setNearby(strategy.ast.Direction.UPRIGHT, 0);
 
         EvalContext ctx = new EvalContext(api, new HashMap<>());
 
-        String src =
-                "if (nearby upright == 1) then move upleft else shoot upright 2";
-
-        runWith(ctx, src);
+        runWith(ctx,
+                "if (nearby upright) then {move upleft done} else {shoot upright 2 done}");
 
         assertEquals(0, api.moveCount);
         assertEquals(1, api.shootCount);
     }
 
-    /*@Test
-    void testFullStrategy() {
-        RecordingDummyGameAPI api = new RecordingDummyGameAPI();
-        EvalContext ctx = new EvalContext(api, new HashMap<>());
+    @Test
+    void testShootAllDirections() {
+        RecordGameAPI api = new RecordGameAPI();
+        Map<String, Long> global = new HashMap<>();
+
+        api.setOpponent(11);
 
         String src = """
-        x = 1
-        while (x) {
-            move up
-            x = x - 1
-        }
+        op = opponent
+
+        if (op % 10 - 1) then {} else {shoot up 5 done}
+        if (op % 10 - 2) then {} else {shoot upright 5 done}
+        if (op % 10 - 3) then {} else {shoot downright 5 done}
+        if (op % 10 - 4) then {} else {shoot down 5 done}
+        if (op % 10 - 5) then {} else {shoot downleft 5 done}
+        shoot upleft 5 done
     """;
 
-        runWith(ctx, src);
+        Direction[] expected = {
+                Direction.UP,
+                Direction.UPRIGHT,
+                Direction.DOWNRIGHT,
+                Direction.DOWN,
+                Direction.DOWNLEFT,
+                Direction.UPLEFT
+        };
 
+        for (int i = 1; i <= 6; i++) {
+            api.clearLogs();
+            api.shootCount = 0;
+            api.moveCount = 0;
+
+            api.setBudget(100);
+            api.setOpponent(10 + i);
+
+            EvalContext ctx = new EvalContext(api, new HashMap<>()); // ✅ NEW ctx
+
+            runWith(ctx, src);
+
+            assertTrue(api.shootCount == 1);
+            assertEquals(expected[i - 1], api.lastShootDir);
+        }
+
+    }
+
+    @Test
+    void testNearbyAllyVsEnemy() {
+        RecordGameAPI api = new RecordGameAPI();
+        Map<String, Long> global = new HashMap<>();
+
+        String src = """
+        if (nearby up) then {shoot up 5 done} else {move down done}
+    """;
+
+        // ===== enemy (positive) =====
+        api.setBudget(100);
+        api.setNearby(Direction.UP, 311); // enemy
+
+        EvalContext ctx1 = new EvalContext(api, global);
+        runWith(ctx1, src);
+
+        assertEquals(1, api.shootCount);
+        assertEquals(0, api.moveCount);
+
+        // ===== reset =====
+        api.clearLogs();
+        api.shootCount = 0;
+        api.moveCount = 0;
+
+        // ===== ally (negative) =====
+        api.setNearby(Direction.UP, -311); // ally
+
+        EvalContext ctx2 = new EvalContext(api, global);
+        runWith(ctx2, src);
+
+        assertEquals(0, api.shootCount);
         assertEquals(1, api.moveCount);
     }
 
     @Test
-    void debugAssignment() {
-        EvalContext ctx = run("x = 1");
+    void testBudgetEdgeCases() {
+        RecordGameAPI api = new RecordGameAPI();
+        Map<String, Long> global = new HashMap<>();
 
-        assertEquals(1, ctx.getVariable("x")); // ← ถ้า FAIL = เจอ bug
+        //ยิงไม่ได้ (budget ไม่พอ)
+        api.setBudget(5); // ต้องใช้ 6
+        EvalContext ctx1 = new EvalContext(api, global);
+
+        runWith(ctx1, "shoot up 5");
+
+        assertEquals(0, api.shootCount); // no-op
+        assertFalse(ctx1.isDone()); // ไม่ terminate
+
+        // ===== reset =====
+        api.clearLogs();
+        api.shootCount = 0;
+
+        // ===== move ไม่ได้ (budget = 0) =====
+        api.setBudget(0);
+        EvalContext ctx2 = new EvalContext(api, global);
+
+        runWith(ctx2, "move up");
+
+        assertTrue(ctx2.isDone());
+        assertEquals(EvalContext.TerminationReason.BUDGET_INSUFFICIENT,
+                ctx2.getTerminationReason());
     }
-     */
 }

@@ -6,6 +6,7 @@ import strategy.eval.EvalContext;
 import strategy.parser.Parser;
 import strategy.tokenizer.Tokenizer;
 import test.unit.testutil.DummyGameAPI;
+import test.unit.testutil.RecordGameAPI;
 
 import java.util.HashMap;
 
@@ -63,7 +64,7 @@ public class ExpressionTest {
 
     @Test
     void testSpecialVariableBudget() {
-        DummyGameAPI api = new DummyGameAPI();
+        RecordGameAPI api = new RecordGameAPI();
         api.setBudget(1000);   // กำหนดค่า test เอง
 
         EvalContext ctx = new EvalContext(api, new HashMap<>());

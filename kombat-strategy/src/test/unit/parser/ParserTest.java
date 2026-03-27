@@ -35,6 +35,7 @@ public class ParserTest {
     @Test
     void testParseIf() {
         assertNotNull(parse("if (1) then move up else done"));
+        assertNotNull(parse("if (x - 1) then move up else move down"));
     }
 
     @Test
@@ -58,7 +59,7 @@ public class ParserTest {
         assertThrows(RuntimeException.class,
                 () -> parse("fly up"));
     }
-    // 1️⃣ ขาด then
+    // ขาด then
     @Test
     void testMissingThen() {
         String src = """
@@ -72,26 +73,13 @@ public class ParserTest {
         assertThrows(RuntimeException.class, () -> parse(src));
     }
 
-    // 2️⃣ ขาด semicolon
-
-    // 3️⃣ nearby ไม่มี direction
+    // nearby ไม่มี direction
     @Test
     void testNearbyMissingDirection() {
         String src = """
-                if nearby == 1 then move up else done
+                if nearby then move up else done
                 """;
 
         assertThrows(RuntimeException.class, () -> parse(src));
     }
-
-    // 4️⃣ ใช้ = แทน ==
-    @Test
-    void testSingleEqualsInsteadOfDoubleEquals() {
-        String src = """
-                if nearby up = 1 then move up else done
-                """;
-
-        assertThrows(RuntimeException.class, () -> parse(src));
-    }
-
 }

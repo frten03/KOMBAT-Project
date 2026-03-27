@@ -26,41 +26,12 @@ public class Parser {
             throw new RuntimeException("Expected " + type);
         return t;
     }
-/*
-expression      → equality
-equality        → addSub (== addSub)*
-addSub          → term ((+|-) term)*
-term            → factor ((*|/) factor)*
-factor          → number | info | (expression)
- */
-    // expression = term ((+|-) term)*
-    /*public Expression parseExpression() {
-        Expression e = parseTerm();
-        while (true) {
-            TokenType t = tz.peekToken().type;
-            if (t == TokenType.PLUS || t == TokenType.MINUS) {
-                consume(t);
-                e = new BinaryExpr(e, t, parseTerm());
-            } else break;
-        }
-        return e;
-    }
-     */
 
     public Expression parseExpression() {
-        return parseEquality();
+        return parseAddSub();
     }
 
-    private Expression parseEquality() {
-        Expression e = parseAddSub();
-
-        while (tz.peekToken().type == TokenType.EQ) {
-            consume(TokenType.EQ);
-            e = new BinaryExpr(e, TokenType.EQ, parseAddSub());
-        }
-
-        return e;
-    }// AddSub = term ((+|-) term)* แทนที่ expression เดิม
+    // AddSub = term ((+|-) term)
     private Expression parseAddSub() {
         Expression e = parseTerm();
 
@@ -75,7 +46,7 @@ factor          → number | info | (expression)
         return e;
     }
 
-    // term = factor ((*|/) factor)*
+    // term = factor ((*|/) factor)
     private Expression parseTerm() {
         Expression e = parseFactor();
         while (true) {
@@ -116,8 +87,6 @@ factor          → number | info | (expression)
                 return e;
             }
 
-            // ===== INFO EXPRESSIONS =====
-
             case OPPONENT:
                 // opponent → delegate to GameAPI later
                 consume(TokenType.OPPONENT);
@@ -135,11 +104,8 @@ factor          → number | info | (expression)
                 return new InfoExpr(InfoExpr.Kind.ALLY, null);
 
 
-            // ===== IDENTIFIER (fallback) =====
-
             case IDENT:
                 consume(TokenType.IDENT);
-                // temporary: unknown variable → 0
                 return new VarExpr(t.value);
 
             default:

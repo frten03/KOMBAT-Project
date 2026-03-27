@@ -56,7 +56,7 @@ class TokenizerTest {
 
     @Test
     void testOperators() {
-        Tokenizer tz = new Tokenizer("+ - * / % ^ == =");
+        Tokenizer tz = new Tokenizer("+ - * / % ^ =");
 
         assertEquals(TokenType.PLUS, tz.nextToken().type);
         assertEquals(TokenType.MINUS, tz.nextToken().type);
@@ -64,7 +64,6 @@ class TokenizerTest {
         assertEquals(TokenType.DIV, tz.nextToken().type);
         assertEquals(TokenType.MOD, tz.nextToken().type);
         assertEquals(TokenType.POW, tz.nextToken().type);
-        assertEquals(TokenType.EQ, tz.nextToken().type);
         assertEquals(TokenType.ASSIGN, tz.nextToken().type);
     }
 

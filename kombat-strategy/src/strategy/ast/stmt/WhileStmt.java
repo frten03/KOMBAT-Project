@@ -13,6 +13,8 @@ public class WhileStmt implements Statement {
         this.body = body;
     }
 
+    public Statement getBody() { return body; }
+
     @Override
     public void eval(EvalContext ctx) {
 

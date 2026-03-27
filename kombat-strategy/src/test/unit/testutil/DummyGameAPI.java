@@ -1,11 +1,14 @@
 package test.unit.testutil;
 
+import lombok.Setter;
 import strategy.ast.Direction;
 import strategy.eval.GameAPI;
 
 public class DummyGameAPI implements GameAPI {
 
-    // ===== configurable fields =====
+    //setters for test control
+    //configurable fields
+    @Setter
     private long budget = 100;
     private long maxBudget = 1000;
     private long interest = 5;
@@ -17,11 +20,6 @@ public class DummyGameAPI implements GameAPI {
     private long nearbyValue = 0;
     private long allyValue = 0;
     private long opponentValue = 0;
-
-    //setters for test control
-    public void setBudget(long budget) {
-        this.budget = budget;
-    }
 
     public void setNearby(long value) {
         this.nearbyValue = value;

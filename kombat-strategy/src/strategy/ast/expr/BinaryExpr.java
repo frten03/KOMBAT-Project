@@ -49,8 +49,6 @@ public class BinaryExpr implements Expression {
 
             case POW -> (long) Math.pow(leftVal, rightVal);
 
-            case EQ -> leftVal == rightVal ? 1 : 0;
-
             default -> throw new RuntimeException("Invalid operator");
         };
     }
