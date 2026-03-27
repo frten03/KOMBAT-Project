@@ -6,7 +6,7 @@
     background-color: #526481;
     overflow: hidden;
 
-    z-index: 0; /* เพิ่ม */
+    z-index: 0;
 }
 
 /* texture overlay */
@@ -20,7 +20,7 @@
     opacity: 0.35;
 
     pointer-events: none;
-    z-index: -1;   /* สำคัญมาก */
+    z-index: -1;
 }
 
 .centered-layout {

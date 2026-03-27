@@ -1,21 +1,31 @@
 import { useNavigate } from "react-router-dom"
+import { useState } from "react"
 import AppLayout from "../layouts/AppLayout"
 import CenteredLayout from "../layouts/CenteredLayout"
 import "../styles/globals.css"
 import "../styles/start.css"
+import { createGame } from "../game/gameApi"
 
 export default function StartPage() {
     const navigate = useNavigate()
+    const [loading, setLoading] = useState(false)
 
-    const handleSelectMode = (mode: string) => {
-
+    const handleSelectMode = async (mode: string) => {
         localStorage.removeItem("duelHostConfig")
         localStorage.removeItem("duelReadyState")
 
         if (mode === "duel") {
             navigate("/room")
         } else {
-            navigate(`/setup?mode=${mode}`)
+            setLoading(true)
+            try {
+                const session = await createGame(mode.toLowerCase())
+                navigate(`/setup?mode=${mode}&gameId=${session.gameId}`)
+            } catch (err) {
+                console.error("Failed to create game:", err)
+            } finally {
+                setLoading(false)
+            }
         }
     }
 
@@ -30,13 +40,15 @@ export default function StartPage() {
                         <button
                             className="btn auto"
                             onClick={() => handleSelectMode("auto")}
+                            disabled={loading}
                         >
-                            auto
+                            {loading ? "Loading..." : "auto"}
                         </button>
 
                         <button
                             className="btn solitaire"
                             onClick={() => handleSelectMode("solitaire")}
+                            disabled={loading}
                         >
                             solitaire
                         </button>

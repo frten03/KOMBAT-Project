@@ -1,51 +1,17 @@
 import { useNavigate, useLocation } from "react-router-dom"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import "../styles/minion-setup.css"
 import AppLayout from "../layouts/AppLayout"
 
-import tankImg from "../assets/minions/tank.png"
-import archerImg from "../assets/minions/archer.png"
-import warriorImg from "../assets/minions/warrior.png"
-import pouImg from "../assets/minions/pou.png"
-import dogImg from "../assets/minions/dog.jpg"
+import { MinionsIMG } from "../assets";
 
 import validIcon from "../assets/icons/valid.png"
 import invalidIcon from "../assets/icons/invalid.png"
-
 import BackButton from "../components/BackButton"
 
+import type { MinionConfig } from "../types/gameTypes.ts"
+import { validateStrategy, getGameState } from "../game/gameApi.tsx"
 
-type MinionType = {
-    type: string
-    def: number
-    avatar: string
-}
-
-type MinionConfig = {
-    type: string
-    customName: string
-    def: number
-    strategy: string
-    isValid: boolean
-}
-
-
-const DEFAULT_STRATEGY = `if (opponent) {
-  shoot up 2;
-  move up;
-} else {
-  move upleft;
-}`
-
-const MINIONS: MinionType[] = [
-    { type: "Tank", def: 200, avatar: tankImg },
-    { type: "Archer", def: 80, avatar: archerImg },
-    { type: "Warrior", def: 120, avatar: warriorImg },
-    { type: "Pou", def: 100, avatar: pouImg },
-    { type: "Dog", def: 90, avatar: dogImg },
-]
-
-/* ================= COMPONENT ================= */
 
 export default function MinionSetupPage() {
 
@@ -54,24 +20,50 @@ export default function MinionSetupPage() {
 
     const params = new URLSearchParams(location.search)
     const mode = params.get("mode")
+    const gameId = params.get("gameId")
+    const role = params.get("role")
 
-    const [current, setCurrent] = useState<MinionType>(MINIONS[0])
+    const [minionTypes, setMinionTypes] = useState<MinionConfig[]>([])
+    const [current, setCurrent] = useState<MinionConfig | null>(null)
 
-    const [editing, setEditing] = useState<MinionConfig>({
-        type: MINIONS[0].type,
-        customName: MINIONS[0].type,
-        def: MINIONS[0].def,
-        strategy: DEFAULT_STRATEGY,
-        isValid: true,
-    })
+    const [editing, setEditing] = useState<MinionConfig | null>(null)
 
     const [savedConfigs, setSavedConfigs] =
         useState<Record<string, MinionConfig>>({})
 
     const [selected, setSelected] = useState<string[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchMinionTypes = async () => {
+            try {
+                if (gameId) {
+                    const state = await getGameState(gameId)
+                    const types = state.availableMinionTypes.map(t => ({
+                        type: t.name,
+                        customName: t.name,
+                        def: t.defense,
+                        strategy: t.strategy,
+                        isValid: true,
+                        avatar: (MinionsIMG as any)[t.name] || ""
+                    }))
+                    setMinionTypes(types)
+                    if (types.length > 0) {
+                        setCurrent(types[0])
+                        setEditing({ ...types[0] })
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch minion types:", err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchMinionTypes()
+    }, [gameId])
 
 
-    const handleViewMinion = (minion: MinionType) => {
+    const handleViewMinion = (minion: MinionConfig) => {
         setCurrent(minion)
 
         const saved = savedConfigs[minion.type]
@@ -83,8 +75,9 @@ export default function MinionSetupPage() {
                 type: minion.type,
                 customName: minion.type,
                 def: minion.def,
-                strategy: DEFAULT_STRATEGY,
+                strategy: minion.strategy,
                 isValid: true,
+                avatar: (MinionsIMG as any)[minion.type],
             })
         }
     }
@@ -98,28 +91,53 @@ export default function MinionSetupPage() {
     }
 
 
-    const handleValidate = () => {
+    const [validating, setValidating] = useState(false)
+    const [lastValidatedStrategy, setLastValidatedStrategy] = useState(editing?.strategy || "")
+    const validateTimeoutRef = useRef<number | null>(null);
 
-        const isValid =
-            editing.strategy.includes("move") ||
-            editing.strategy.includes("shoot")
-
-        const updated = { ...editing, isValid }
-
-        setEditing(updated)
-
-        setSavedConfigs(prev => ({
-            ...prev,
-            [editing.type]: updated
-        }))
+    const handleValidate = async () => {
+        if (!editing || editing.strategy === lastValidatedStrategy) return
+        setLastValidatedStrategy(editing.strategy)
+        setValidating(true)
+        try {
+            const result = await validateStrategy(editing.strategy)
+            const updated = { ...editing, isValid: result.valid }
+            setEditing(updated)
+            setSavedConfigs(prev => ({
+                ...prev,
+                [editing.type]: updated
+            }))
+        } catch (err) {
+            const updated = { ...editing, isValid: false }
+            setEditing(updated)
+            setSavedConfigs(prev => ({
+                ...prev,
+                [editing.type]: updated
+            }))
+        } finally {
+            setValidating(false)
+        }
     }
 
-    const hasInvalidSelected = (() => {
+    useEffect(() => {
+        if (!editing) return
+        if (validateTimeoutRef.current) {
+            clearTimeout(validateTimeoutRef.current)
+        }
+        validateTimeoutRef.current = setTimeout(() => {
+            handleValidate()
+        }, 500)
+        return () => {
+            if (validateTimeoutRef.current) {
+                clearTimeout(validateTimeoutRef.current)
+            }
+        }
+    }, [editing?.strategy])
 
-        if (selected.length === 0) return true
+    const hasInvalidSelected = (() => {
+        if (selected.length === 0 || !editing) return true
 
         return selected.some(type => {
-
             if (type === editing.type) {
                 return !editing.isValid
             }
@@ -127,32 +145,69 @@ export default function MinionSetupPage() {
             const saved = savedConfigs[type]
             return saved ? !saved.isValid : false
         })
-
     })()
 
 
-    const handleConfirm = () => {
-
-        if (hasInvalidSelected) return
+    const handleConfirm = async () => {
+        if (hasInvalidSelected || !editing) return
 
         const finalConfigs = selected.map(type => {
-
+            const base = minionTypes.find(m => m.type === type)!
             if (type === editing.type) {
-                return editing
+                return {
+                    ...editing,
+                    avatar: base.avatar
+                }
             }
 
-            return savedConfigs[type] ?? {
-                type,
-                customName: type,
-                def: MINIONS.find(m => m.type === type)!.def,
-                strategy: DEFAULT_STRATEGY,
-                isValid: true,
-            }
+            const saved = savedConfigs[type]
+
+            return saved
+                ? { ...saved, avatar: base.avatar }
+                : {
+                    type,
+                    customName: type,
+                    def: base.def,
+                    strategy: base.strategy,
+                    isValid: true,
+                    avatar: base.avatar
+                }
         })
 
-        navigate(`/agreement?mode=${mode}`, {
-            state: { selectedMinions: finalConfigs }
-        })
+        if (mode === "duel" && role === "host") {
+            try {
+                const { submitConfig } = await import("../game/gameApi")
+                await submitConfig(gameId!, selected)
+                navigate(`/waiting?gameId=${gameId}&role=host`)
+            } catch (err) {
+                console.error("Failed to submit config:", err)
+                navigate(`/waiting?gameId=${gameId}&role=host`)
+            }
+        } else {
+            navigate(`/agreement?mode=${mode}&gameId=${gameId}`, {
+                state: { selectedMinions: finalConfigs }
+            })
+        }
+    }
+
+    if (loading) {
+        return (
+            <AppLayout>
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+                    <p>Loading minion types...</p>
+                </div>
+            </AppLayout>
+        )
+    }
+
+    if (!current || !editing) {
+        return (
+            <AppLayout>
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+                    <p>No minion types available</p>
+                </div>
+            </AppLayout>
+        )
     }
 
     return (
@@ -173,7 +228,7 @@ export default function MinionSetupPage() {
                     <div className="left-panel">
                         <h3 className="section-title">Minion Types</h3>
 
-                        {MINIONS.map(minion => {
+                        {minionTypes.map(minion => {
 
                             const saved = savedConfigs[minion.type]
                             const displayName =
@@ -193,7 +248,7 @@ export default function MinionSetupPage() {
                                     <span
                                         onClick={() => handleViewMinion(minion)}
                                         className={`minion-name ${
-                                            current.type === minion.type
+                                            current?.type === minion.type
                                                 ? "active-minion"
                                                 : ""
                                         }`}
@@ -218,21 +273,27 @@ export default function MinionSetupPage() {
                                         value={editing.customName}
                                         placeholder="Enter name"
                                         onChange={(e) => {
-                                            const englishOnly = e.target.value.replace(/[^a-zA-Z ]/g, "")
-
-                                            setEditing(prev => ({
-                                                ...prev,
-                                                customName: englishOnly
-                                            }))
+                                            const englishOnly = e.target.value.replace(/[^a-zA-Z ]/g, "");
+                                            setEditing(prev => {
+                                                if (!prev) return null;
+                                                return {
+                                                    ...prev,
+                                                    customName: englishOnly
+                                                };
+                                            });
                                         }}
                                         onKeyDown={(e) => {
                                             if (e.key === "Enter") {
-                                                e.preventDefault()
+                                                e.preventDefault();
+                                                if (!editing) return;
 
-                                                setSavedConfigs(prev => ({
-                                                    ...prev,
-                                                    [editing.type]: editing
-                                                }))
+                                                setSavedConfigs(prev => {
+                                                    if (!prev) return prev;
+                                                    return {
+                                                        ...prev,
+                                                        [editing.type]: editing
+                                                    };
+                                                });
                                             }
                                         }}
                                     />
@@ -242,13 +303,14 @@ export default function MinionSetupPage() {
                                     <label>DEF :</label>
                                     <input
                                         type="number"
-                                        value={editing.def}
-                                        onChange={(e) =>
-                                            setEditing(prev => ({
+                                        value={editing?.def ?? 0}
+                                        onChange={(e) => {
+                                            const val = e.target.value === "" ? 0 : Number(e.target.value);
+                                            setEditing(prev => prev ? {
                                                 ...prev,
-                                                def: Number(e.target.value)
-                                            }))
-                                        }
+                                                def: val
+                                            } : null);
+                                        }}
                                     />
                                 </div>
 
@@ -256,8 +318,8 @@ export default function MinionSetupPage() {
 
                             <div className="avatar-wrapper">
                                 <img
-                                    src={current.avatar}
-                                    alt={current.type}
+                                    src={editing.avatar}
+                                    alt={editing.type}
                                 />
                             </div>
 
@@ -265,32 +327,39 @@ export default function MinionSetupPage() {
 
                         <div className="strategy-section">
 
-                            <div className="strategy-header">
+                                <div className="strategy-header">
                                 <h3 className="section-title">
                                     Strategy Script
                                 </h3>
 
-                                <img
-                                    src={
-                                        editing.isValid
-                                            ? validIcon
-                                            : invalidIcon
-                                    }
-                                    alt="validate"
-                                    className="validate-icon"
-                                    onClick={handleValidate}
-                                />
+                                <div 
+                                    className="validate-icon-wrapper"
+                                    style={{ opacity: validating ? 0.5 : 1 }}
+                                >
+                                    <img
+                                        src={validIcon as string}
+                                        alt="valid"
+                                        className="validate-icon"
+                                        style={{ opacity: (validating || editing.isValid) ? 1 : 0 }}
+                                    />
+                                    <img
+                                        src={invalidIcon as string}
+                                        alt="invalid"
+                                        className="validate-icon"
+                                        style={{ opacity: (!validating && !editing.isValid) ? 1 : 0 }}
+                                    />
+                                </div>
                             </div>
 
                             <textarea
-                                value={editing.strategy}
-                                onChange={(e) =>
-                                    setEditing(prev => ({
+                                value={editing?.strategy || ""}
+                                onChange={(e) => {
+                                    const newValue = e.target.value;
+                                    setEditing(prev => prev ? {
                                         ...prev,
-                                        strategy: e.target.value,
-                                        isValid: false
-                                    }))
-                                }
+                                        strategy: newValue
+                                    } : null);
+                                }}
                             />
 
                         </div>

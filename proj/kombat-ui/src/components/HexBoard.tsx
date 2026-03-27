@@ -1,55 +1,79 @@
-import type { Hex } from "../types/gameTypes"
+import type { HexCoord } from "../types/gameTypes"
 import HexCell from "./HexCell"
-import "../styles/HexBoard.css"
+import "../styles/hexBoard.css"
 
 type Props = {
-    board: Hex[]
-    onHexClick?: (hex: Hex) => void
+    board: HexCoord[]
+    onHexClick?: (hex: HexCoord) => void
+    selectedHex?: HexCoord | null
+    buyableHexes: string[]
+    adjacentHexes?: string[]
 }
 
-export default function HexBoard({ board, onHexClick }: Props) {
+export default function HexBoard({
+                                     board,
+                                     onHexClick,
+                                     selectedHex,
+                                     buyableHexes,
+                                     adjacentHexes = []
+                                 }: Props) {
 
     const size = 35
     const width = size * 2
     const height = Math.sqrt(3) * size
 
-    const horizontalStep = size * 1.5
-    const verticalStep = height * 0.75
+    const horizontalStep = width * 0.75
+    const verticalStep = height
+
+    const cols = 8
+
+    const getHexKey = (hex: HexCoord) => `${hex.col},${hex.row}`
+    const isSelected = (hex: HexCoord) => 
+        selectedHex?.row === hex.row && selectedHex?.col === hex.col
+    const isBuyable = (hex: HexCoord) => 
+        buyableHexes?.includes(getHexKey(hex))
+    const isAdjacent = (hex: HexCoord) => 
+        adjacentHexes?.includes(getHexKey(hex))
 
     return (
         <div
             className="board"
             style={{
-                width: horizontalStep * 8 + size,
-                height: verticalStep * 8 + height
+                position: "relative",
+                width: cols * horizontalStep + size,
+                height: 8 * verticalStep + height / 2 + 20
             }}
-        >{board.map((hex, index) => {
+        >
+            {board.map((hex) => {
+                const x = hex.col * horizontalStep
+                const y = hex.row * verticalStep + 
+                    (hex.col % 2 === 0 ? height / 2 : 0)
 
-            const row = Math.floor(index / 8)
-            const col = index % 8
-
-            const x = col * (width * 0.75)
-
-            const baseOffset = height / 2
-
-            const y =
-                row * height +
-                (col % 2 === 0 ? height / 2 : 0) +
-                baseOffset
-
-            return (
-                <div
-                    key={hex.id}
-                    style={{
-                        position: "absolute",
-                        left: x,
-                        top: y
-                    }}
-                >
-                    <HexCell owner={hex.owner} />
-                </div>
-            )
-        })}
+                return (
+                    <div
+                        key={getHexKey(hex)}
+                        style={{
+                            position: "absolute",
+                            left: x,
+                            top: y
+                        }}
+                        onClick={() => onHexClick?.(hex)}
+                    >
+                        <div style={{ position: "relative" }}>
+                            <HexCell
+                                owner={hex.owner}
+                                minion={hex.minion}
+                                isSelected={isSelected(hex)}
+                                isBuyable={isBuyable(hex)}
+                                isAdjacent={isAdjacent(hex)}
+                            />
+                            <div className="hex-coords">
+                                {hex.col},{hex.row}
+                            </div>
+                        </div>
+                    </div>
+                )
+            })}
         </div>
     )
 }

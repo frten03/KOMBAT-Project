@@ -1,31 +1,31 @@
-/* ตั้งค่า default font */
+
 body {
     margin: 0;
     font-family: 'Fredoka', sans-serif;
     color: #F8FAFC;
 }
-/* Title ใหญ่สุด */
+
 .text-title {
     font-size: 128px;
-    font-weight: 700; /* Bold */
+    font-weight: 700;
 }
 
-/* หัวข้อปกติ */
+
 .text-heading {
     font-size: 64px;
-    font-weight: 500; /* Medium */
+    font-weight: 500;
 }
 
-/* หัวข้อรอง */
+
 .text-subheading {
     font-size: 48px;
-    font-weight: 600; /* Semibold */
+    font-weight: 600;
 }
 
-/* เนื้อหา */
+
 .text-body {
     font-size: 40px;
-    font-weight: 400; /* Regular */
+    font-weight: 400;
 }
 
 h1, h2, h3, p {
@@ -42,10 +42,10 @@ h1, h2, h3, p {
     --text-secondary: #E2E8F0;
 
     /* ===== Buttons ===== */
-    --btn-auto: #FBBF24;          /* เหลือง */
-    --btn-duel: #F87171;          /* แดง */
-    --btn-solitaire: #34D399;     /* เขียว */
-    --btn-room: #8CABDF;          /* ฟ้า */
+    --btn-auto: #FBBF24;
+    --btn-duel: #F87171;
+    --btn-solitaire: #34D399;
+    --btn-room: #8CABDF;
 
     --btn-text: #FFFFFF;
     /* ===== Radius ===== */

@@ -1,22 +1,31 @@
 import "../styles/minionpanel.css"
-
-interface Minion {
-    customName: string
-    avatar: string
-}
+import type {MinionConfig} from "../types/gameTypes"
+import { MinionsIMG } from "../assets"
 
 interface MinionPanelProps {
-    minions?: Minion[]
+    minions : MinionConfig[]
+    onSelect: (m: MinionConfig) => void
+    selected: MinionConfig | null
 }
 
-export default function MinionPanel({ minions = [] }: MinionPanelProps) {
+export default function MinionPanel({minions = [], onSelect, selected}: MinionPanelProps) {
+    const getAvatar = (type: string): string | undefined => {
+        return (MinionsIMG as Record<string, string>)[type]
+    }
+
     return (
         <div className="minion-panel">
-
+            <div className="minion-grid-container">
             {minions.map((minion, i) => (
-                <div key={i} className="minion-slot">
+                <div
+                    key={i}
+                    className={`minion-slot ${
+                        selected?.type === minion.type ? "selected" : ""
+                    }`}
+                    onClick={() => onSelect(minion)}
+                >
                     <img
-                        src={minion.avatar}
+                        src={getAvatar(minion.type)}
                         alt={minion.customName}
                         className="minion-avatar"
                     />
@@ -24,10 +33,10 @@ export default function MinionPanel({ minions = [] }: MinionPanelProps) {
                         {minion.customName}
                     </div>
                 </div>
-            ))}
+            ))}</div>
 
             <div className="spawn-cost">
-                spawn cost: 100 🪙
+                spawn cost: 100 $
             </div>
 
         </div>

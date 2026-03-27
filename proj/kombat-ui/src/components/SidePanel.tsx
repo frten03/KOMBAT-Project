@@ -1,25 +1,39 @@
+import { useRef, useEffect } from "react"
+import type { HexCoord } from "../types/gameTypes"
+import type { GameConfig } from "../game/gameApi"
 
 interface Props {
+    selectedHex: HexCoord | null
+    onBuyHexRequest: (hex: HexCoord) => void
     onEndTurn: () => void
     onEndGame: () => void
+    isAutoPlaying?: boolean
+    spawnsLeft?: number
+    gameConfig?: GameConfig | null
+    logs?: string[]
+    mode?: GameMode
 }
 
+type GameMode = "Duel" | "Solitaire" | "Auto"
+
 export default function SidePanel({
-                                      onEndTurn,
-                                      onEndGame
-                                  }: Props) {
+    selectedHex, 
+    onBuyHexRequest, 
+    onEndTurn, 
+    onEndGame,
+    isAutoPlaying = false,
+    spawnsLeft = 0,
+    gameConfig,
+    logs = [],
+    mode = "Duel"
+}: Props) {
 
-    // ตอนนี้เป็น mock ไว้ก่อน
-    const interestRate = "X%"
-    const spawnsLeft = "XX"
-    const hexCost = 100
+    const hexCost = gameConfig?.hexPurchaseCost ?? 0
+    const logEndRef = useRef<HTMLDivElement>(null)
 
-    const logs = [
-        "Turn 5: Player 1 gained +90 budget",
-        "Minion #1 moved up left (cost 1)",
-        "Minion #2 shot down (cost 21)",
-        "Minion #3 died",
-    ]
+    useEffect(() => {
+        logEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }, [logs])
 
     return (
         <div className="right-sidebar">
@@ -27,14 +41,17 @@ export default function SidePanel({
             <div className="card turn-card">
                 <h3>Turn Resources</h3>
 
-                <div>- Interest Rate {interestRate}</div>
-                <div>- Spawns Left {spawnsLeft}</div>
+                <div>Interest Rate : {gameConfig?.interestPct ?? 0}%</div>
+                <div>Spawns Left : {spawnsLeft}</div>
 
                 <div>
                     Hex Expansion : {hexCost}
                 </div>
 
-                <button className="buy-btn">
+                <button
+                    className="buy-btn"
+                    onClick={() => selectedHex && onBuyHexRequest(selectedHex)}
+                    disabled={!selectedHex}>
                     Buy Hex
                 </button>
             </div>
@@ -45,9 +62,15 @@ export default function SidePanel({
                 {logs.map((log, index) => (
                     <div key={index}>{log}</div>
                 ))}
+                <div ref={logEndRef} />
             </div>
 
             <div className="action-buttons">
+                {isAutoPlaying && (
+                    <button className="auto-play-indicator">
+                        Bot...
+                    </button>
+                )}
 
                 <button
                     className="end-game-btn"
@@ -56,13 +79,14 @@ export default function SidePanel({
                     End Game
                 </button>
 
-                <button
-                    className="end-turn-btn"
-                    onClick={onEndTurn}
-                >
-                    End Turn
-                </button>
-
+                {mode !== "Auto" && !isAutoPlaying && (
+                    <button
+                        className="end-turn-btn"
+                        onClick={onEndTurn}
+                    >
+                        End Turn
+                    </button>
+                )}
             </div>
         </div>
     )

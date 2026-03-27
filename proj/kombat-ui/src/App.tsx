@@ -1,7 +1,12 @@
 import AppRouter from "./router/AppRouter"
+import { QueryProvider } from "./providers/QueryProvider"
 
 function App() {
-    return <AppRouter />
+    return (
+        <QueryProvider>
+            <AppRouter />
+        </QueryProvider>
+    )
 }
 
 export default App

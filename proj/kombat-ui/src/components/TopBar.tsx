@@ -19,7 +19,7 @@ export default function TopBar({
     const items = [
         `Turn: ${turn}`,
         `Current Player: ${currentPlayer}`,
-        `Budget: ${budget}`,
+        `Budget: ${budget.toFixed(2)}`,
         `Mode: ${mode}`
     ]
 

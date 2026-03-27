@@ -20,7 +20,7 @@
     flex-direction: column;
     align-items: center;
 
-    margin-bottom: 140px; /* ดันขึ้นเล็กน้อย */
+    margin-bottom: 140px;
 }
 
 /* badge */
@@ -35,7 +35,7 @@
     font-size: 40px;
     font-weight: 500;
 
-    margin-bottom: 30px; /* ชิด Room ID มากขึ้น */
+    margin-bottom: 30px;
 }
 
 /* room id */

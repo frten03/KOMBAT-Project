@@ -19,7 +19,7 @@
 }
 
 .btn.room {
-    background-color: var(--btn-room); /* ฟ้า */
+    background-color: var(--btn-room);
     color: #FFFFFF;
 }
 

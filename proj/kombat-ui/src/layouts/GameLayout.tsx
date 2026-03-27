@@ -1,4 +1,5 @@
 import "../styles/layout.css"
+import bgImage from "../assets/background/Image.png"
 
 interface Props {
     header: React.ReactNode
@@ -14,7 +15,12 @@ export default function GameLayout({
                                        log
                                    }: Props) {
     return (
-        <div className="game-container">
+        <div className="game-container"
+             style={{
+                 backgroundImage: `url(${bgImage})`,
+                 backgroundSize: "cover",
+                 backgroundPosition: "center",
+             }}>
 
             <div className="top-bar">
                 {header}

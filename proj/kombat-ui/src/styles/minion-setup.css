@@ -94,7 +94,7 @@
 }
 
 .right-panel {
-    flex: 0 1 600px;   /* ปรับให้บาลานซ์กับซ้าย */
+    flex: 0 1 600px;
     display: flex;
     flex-direction: column;
 }
@@ -128,7 +128,7 @@
     display: flex;
     gap: 40px;
     align-items: flex-start;
-    margin-bottom: 20px;
+    margin-bottom: 0px;
 }
 
 .info-left {
@@ -154,14 +154,14 @@
 }
 
 .row-field label {
-    width: 90px;              /* lock width ป้องกัน colon ลอย */
+    width: 90px;
     font-size: 26px;
     font-weight: 500;
     color: var(--text-primary);
 }
 
 .row-field input {
-    flex: 1;                  /* ให้ขยายเต็มพื้นที่ */
+    flex: 1;
     height: 42px;
     padding: 0 18px;
     border-radius: 999px;
@@ -178,7 +178,7 @@
 /* ===== Strategy Section ===== */
 
 .strategy-section {
-    margin-top: 20px;
+    margin-top: 10px;
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -193,11 +193,22 @@
 
 .validate-icon {
     width: 30px;
-    cursor: pointer;
+    height: 30px;
+    position: absolute;
+    top: 0;
+    left: 0;
     transition: 0.2s;
 }
 
-.validate-icon:hover {
+.validate-icon-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    transition: 0.2s;
+}
+
+.validate-icon-wrapper:hover {
     transform: scale(1.1);
 }
 
