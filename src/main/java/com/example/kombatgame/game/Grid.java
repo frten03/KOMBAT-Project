@@ -7,14 +7,15 @@ public class Grid {
 
     private final int size;
     private final Minion[][] board;
+    private List<Minion> cachedMinions = null;
 
     public Grid(int size) {
         this.size = size;
-        this.board = new Minion[size+1][size+1]; // เริ่ม index ที่ 1
+        this.board = new Minion[size][size];
     }
 
     public boolean inBounds(int r, int c) {
-        return r >= 1 && r <= size && c >= 1 && c <= size;
+        return r >= 0 && r < size && c >= 0 && c < size;
     }
 
     public boolean isOccupied(int r, int c) {
@@ -27,28 +28,33 @@ public class Grid {
 
     public void addMinion(Minion m) {
         board[m.getRow()][m.getCol()] = m;
+        cachedMinions = null;
     }
 
     public void moveMinion(Minion m, int nr, int nc) {
         board[m.getRow()][m.getCol()] = null;
         m.setPosition(nr, nc);
         board[nr][nc] = m;
+        cachedMinions = null;
     }
 
     public void removeMinion(Minion m) {
         board[m.getRow()][m.getCol()] = null;
+        cachedMinions = null;
     }
 
     public List<Minion> getAllMinions() {
-        List<Minion> list = new ArrayList<>();
-        for (int r = 1; r <= size; r++) {
-            for (int c = 1; c <= size; c++) {
-                if (board[r][c] != null) {
-                    list.add(board[r][c]);
+        if (cachedMinions == null) {
+            cachedMinions = new ArrayList<>();
+            for (int r = 0; r < size; r++) {
+                for (int c = 0; c < size; c++) {
+                    if (board[r][c] != null) {
+                        cachedMinions.add(board[r][c]);
+                    }
                 }
             }
         }
-        return list;
+        return new ArrayList<>(cachedMinions);
     }
 
     public boolean isEmpty(int r, int c) {

@@ -5,7 +5,6 @@ import com.example.kombatgame.strategy.ast.Direction;
 
 public class GameLogic {
 
-    // getter UI
     @Getter
     private final Grid board;
     private final Player player1;
@@ -48,27 +47,44 @@ public class GameLogic {
         return true;
     }
 
+    // combat result
+    public static class ShootResult {
+        public boolean hit = false;
+        public Minion target = null;
+        public int damageDealt = 0;
+        public int targetHpAfter = 0;
+        public boolean killed = false;
+    }
+
     // combat
-    public boolean shoot(Minion attacker, Direction dir, long cost) {
+    public ShootResult shoot(Minion attacker, Direction dir, long cost) {
+        ShootResult result = new ShootResult();
         Player p = attacker.getOwner();
 
-        if (!p.spendBudget(cost+1)) return false;
+        if (!p.spendBudget(cost+1)) return result;
 
         int tr = attacker.getRow() + dir.dr;
         int tc = attacker.getCol() + dir.dc;
 
-        if (!board.inBounds(tr, tc)) return false;
+        if (!board.inBounds(tr, tc)) return result;
 
         Minion target = board.getMinion(tr, tc);
-        if (target == null) return false;
+        if (target == null) return result;
 
+        result.hit = true;
+        result.target = target;
+
+        int originalHp = target.getHp();
         target.takeDamage((int) cost);
+        result.damageDealt = originalHp - target.getHp();
+        result.targetHpAfter = target.getHp();
 
         if (target.getHp() <= 0) {
             board.removeMinion(target);
+            result.killed = true;
         }
 
-        return true;
+        return result;
     }
 
     // info

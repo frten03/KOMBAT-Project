@@ -15,6 +15,9 @@ public class IfStmt implements Statement {
         this.elseStmt = elseStmt;
     }
 
+    public Statement getThenStatement() { return thenStmt; }
+    public Statement getElseStatement() { return elseStmt; }
+
     @Override
     public void eval(EvalContext ctx) {
         if (ctx.isDone()) return;

@@ -3,7 +3,11 @@ package com.example.kombatgame.game;
 import java.util.List;
 import java.util.ArrayList;
 
-// for UI (1 turn)
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class TurnSummary {
 
     private int turnNumber;

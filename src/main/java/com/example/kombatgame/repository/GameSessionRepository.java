@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Random;
 
 import com.example.kombatgame.model.GameSession;
 
@@ -17,10 +17,11 @@ import com.example.kombatgame.model.GameSession;
 public class GameSessionRepository {
 
     private final Map<String, GameSession> sessions = new HashMap<>();
+    private final Random random = new Random();
 
     public GameSession createSession(String mode) {
 
-        String id = UUID.randomUUID().toString().substring(0, 6);
+        String id = String.format("%06d", random.nextInt(1000000));
 
         // กัน mode พิมพ์ผิด
         GameMode gameMode;

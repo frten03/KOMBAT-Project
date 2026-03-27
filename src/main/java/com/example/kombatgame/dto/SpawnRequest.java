@@ -1,7 +1,7 @@
 package com.example.kombatgame.dto;
 
 public class SpawnRequest {
-    public int row;
+    public String typeName;
     public int col;
-    public String type;
+    public int row;
 }

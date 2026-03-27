@@ -14,14 +14,6 @@ public class InfoExpr implements Expression {
     private final Kind kind;
     private final Direction dir;
 
-    /*@Override
-    public long eval(EvalContext ctx) {
-        if (kind == Kind.OPPONENT)
-            return ctx.api.opponent();   // ใช้ของจริงจากเกม //คืนค่าจำนวน opponent
-        return ctx.api.nearby(dir); //ถาม API ว่าทิศนั้นมีอะไรไหม
-    }
-     */
-
     @Override
     public long eval(EvalContext ctx) {
         switch (kind) {

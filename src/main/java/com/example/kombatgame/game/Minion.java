@@ -1,41 +1,52 @@
 package com.example.kombatgame.game;
 
+import lombok.Getter;
 import lombok.Setter;
+import java.util.UUID;
 
 public class Minion {
+    @Getter
+    private final String id;
+    @Getter
+    private final int minionNumber;
+    @Getter
     private int row;
+    @Getter
     private int col;
+    @Getter
     private int hp;
+    @Getter
     private int defense;
+    @Getter
     private final Player owner;
+    @Getter
     private MinionType type;
+    @Getter
+    private int maxHp;
 
-    @Setter
-    private boolean strategyBroken = false;
-
-    public boolean isStrategyBroken() {
-        return strategyBroken;
-    }
-
-    public Minion(int row, int col, int hp, int defense, Player owner) {
+    public Minion(int row, int col, int hp, int defense, Player owner, int minionNumber) {
         if (hp <= 0) {
             throw new IllegalArgumentException("HP must be positive");
         }
         if (owner == null) {
             throw new IllegalArgumentException("Owner cannot be null");
         }
+        this.id = UUID.randomUUID().toString();
+        this.minionNumber = minionNumber;
         this.row = row;
         this.col = col;
         this.hp = hp;
+        this.maxHp = hp;
         this.defense = defense;
         this.owner = owner;
     }
 
     public Minion(int row, int col, int hp,
-                  MinionType type, Player owner) {
+                  MinionType type, Player owner, int minionNumber) {
 
-        this(row, col, hp, type.getDefense(), owner);
+        this(row, col, hp, type.getDefense(), owner, minionNumber);
         this.type = type;
+        this.maxHp = hp;
     }
 
     public void setPosition(int r, int c) {
@@ -60,31 +71,6 @@ public class Minion {
                 ", def=" + defense +
                 ", ownerBudget=" + owner.getBudget() +
                 '}';
-    }
-
-    // getter
-    public MinionType getType() {
-        return type;
-    }
-
-    public int getRow() {
-        return row;
-    }
-
-    public int getCol() {
-        return col;
-    }
-
-    public int getHp() {
-        return hp;
-    }
-
-    public int getDefense() {
-        return defense;
-    }
-
-    public Player getOwner() {
-        return owner;
     }
 
 }

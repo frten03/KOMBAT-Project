@@ -4,8 +4,7 @@ public enum TokenType {
     IF,THEN, ELSE, WHILE, DONE,
     IDENT, NUMBER,
     PLUS, MINUS, MUL, DIV, MOD, POW,
-    EQ, // ==
-    ASSIGN,
+    ASSIGN, // =
     LPAREN, RPAREN,
     LBRACE, RBRACE,
     EOF,

@@ -5,8 +5,8 @@ import com.example.kombatgame.game.Minion;
 import com.example.kombatgame.model.*;
 import com.example.kombatgame.dto.*;
 
+
 import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Collectors;
 
 public class GameMapper {
@@ -23,28 +23,61 @@ public class GameMapper {
     public static GameStateDTO toStateDTO(GameState state) {
         GameStateDTO dto = new GameStateDTO();
 
-        // current player
+        dto.phase = state.getPhase().name();
         dto.currentPlayer = state.getCurrentPlayer().getId();
-
-        // budget ของ player ปัจจุบัน
+        dto.globalTurn = state.getGlobalTurn();
         dto.budget = state.getCurrentPlayer().getBudget();
+        dto.spawnsLeft = state.getCurrentPlayer().getSpawnsLeft();
+        dto.spawnCost = state.getConfig().getSpawnCost();
+        dto.hexPurchaseCost = state.getConfig().getHexPurchaseCost();
+        dto.gameOver = state.getPhase() == GameState.Phase.FINISHED;
+        dto.gameOverReason = state.getGameOverReason();
 
-        // รวม minions ของทั้งสองฝั่ง
-        List<Minion> allMinions = new ArrayList<>();
-        allMinions.addAll(state.getPlayer1().getMinions());
-        allMinions.addAll(state.getPlayer2().getMinions());
+        dto.player1SpawnableHexes = new ArrayList<>(state.getPlayer1().getSpawnableHexes());
+        dto.player2SpawnableHexes = new ArrayList<>(state.getPlayer2().getSpawnableHexes());
 
-        dto.minions = allMinions.stream()
-                .map(m -> {
-                    MinionDTO d = new MinionDTO();
-                    d.row = m.getRow();
-                    d.col = m.getCol();
-                    d.hp = m.getHp();
-                    d.owner = m.getOwner().getId();
-                    return d;
-                })
+        dto.player1Minions = state.getPlayer1().getMinions().stream()
+                .map(GameMapper::toMinionDTO)
                 .collect(Collectors.toList());
 
+        dto.player2Minions = state.getPlayer2().getMinions().stream()
+                .map(GameMapper::toMinionDTO)
+                .collect(Collectors.toList());
+
+        dto.availableMinionTypes = state.getBaseTypes().stream()
+                .map(GameMapper::toMinionTypeDTO)
+                .collect(Collectors.toList());
+
+        dto.turnLogs = state.getTurnLogs().getLogs();
+
+        dto.player1MinionTypes = state.getPlayer1().getMinionTypes().stream()
+                .map(GameMapper::toMinionTypeDTO)
+                .collect(Collectors.toList());
+
+        dto.player2MinionTypes = state.getPlayer2().getMinionTypes().stream()
+                .map(GameMapper::toMinionTypeDTO)
+                .collect(Collectors.toList());
         return dto;
+    }
+
+    private static MinionTypeDTO toMinionTypeDTO(com.example.kombatgame.game.MinionType t) {
+        MinionTypeDTO mt = new MinionTypeDTO();
+        mt.name = t.getName();
+        mt.defense = t.getDefense();
+        mt.strategy = t.getStrategySource();
+        return mt;
+    }
+
+    public static MinionDTO toMinionDTO(Minion m) {
+        MinionDTO d = new MinionDTO();
+        d.id = m.getId();
+        d.row = m.getRow();
+        d.col = m.getCol();
+        d.hp = m.getHp();
+        d.maxHp = m.getMaxHp();
+        d.defense = m.getDefense();
+        d.typeName = m.getType() != null ? m.getType().getName() : "Unknown";
+        d.owner = m.getOwner().getId();
+        return d;
     }
 }

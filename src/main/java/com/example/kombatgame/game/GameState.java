@@ -1,14 +1,14 @@
 package com.example.kombatgame.game;
 
-import com.example.kombatgame.game.DefaultStrategy.*;
-import com.example.kombatgame.strategy.parser.Parser;
-import com.example.kombatgame.strategy.tokenizer.Tokenizer;
+import com.example.kombatgame.dto.TurnLogsDTO;
+import com.example.kombatgame.strategy.eval.ActionLog;
 import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class GameState {
 
@@ -18,7 +18,6 @@ public class GameState {
         FINISHED
     }
 
-    // getter
     @Getter
     private final GameConfig config;
     @Getter
@@ -35,6 +34,8 @@ public class GameState {
     private final Random random = new Random();
 
     private final StrategyEvaluator evaluator;
+
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     @Getter
     private Player currentPlayer;
@@ -54,6 +55,9 @@ public class GameState {
     @Getter
     private String gameOverReason;
 
+    @Getter
+    private final TurnLogsDTO turnLogs = new TurnLogsDTO();
+
     public GameState(GameConfig config, GameMode mode) {
         if (config == null || mode == null)
             throw new IllegalArgumentException("Config and mode must not be null");
@@ -66,14 +70,6 @@ public class GameState {
 
         configureMode();
         initBaseTypes();
-
-        List<String> defaults = new ArrayList<>();
-        for (MinionType t : baseTypes) {
-            defaults.add(t.getName());
-        }
-
-        selectMinionTypes(player1, defaults);
-        selectMinionTypes(player2, defaults);
 
         this.board = new Grid(8);
         this.evaluator = new StrategyEvaluator();
@@ -100,95 +96,442 @@ public class GameState {
         }
     }
 
-    // spawn zone
+    // spawn zone - format is (col, row)
     private void initSpawnZones() {
         // player1 top-left
+        player1.addSpawnableHex(0, 0);
+        player1.addSpawnableHex(1, 0);
+        player1.addSpawnableHex(2, 0);
+        player1.addSpawnableHex(0, 1);
         player1.addSpawnableHex(1, 1);
-        player1.addSpawnableHex(1, 2);
-        player1.addSpawnableHex(2, 1);
-        player1.addSpawnableHex(2, 2);
-        player1.addSpawnableHex(1, 3);
 
         // player2 bottom-right
-        player2.addSpawnableHex(8, 8);
-        player2.addSpawnableHex(8, 7);
-        player2.addSpawnableHex(7, 8);
+        player2.addSpawnableHex(5, 7);
+        player2.addSpawnableHex(6, 7);
         player2.addSpawnableHex(7, 7);
-        player2.addSpawnableHex(8, 6);
+        player2.addSpawnableHex(6, 6);
+        player2.addSpawnableHex(7, 6);
     }
 
     // default minion
     private void initBaseTypes() {
-
         baseTypes = new ArrayList<>();
 
+        // Archer - Ranged attacks, variable damage based on distance
         baseTypes.add(new MinionType(
-                "Assault",
-                5,
-                AssaultStrategy.SOURCE
-        ));
-
-        baseTypes.add(new MinionType(
-                "Trickster",
-                3,
-                TricksterStrategy.SOURCE
-        ));
-
-        baseTypes.add(new MinionType(
-                "Tank",
-                8,
-                TankStrategy.SOURCE
-        ));
-
-        baseTypes.add(new MinionType(
-                "Sniper",
+                "Archer",
                 2,
-                SniperStrategy.SOURCE
+                """
+                t = t + 1
+                r = 0
+                
+                while (3 - r) {
+                
+                  op = opponent
+                
+                  if (op / 10 - 1)
+                  then {
+                
+                    if (op % 10 - 1) then {} else { move up done }
+                    if (op % 10 - 2) then {} else { move upright done }
+                    if (op % 10 - 3) then {} else { move downright done }
+                    if (op % 10 - 4) then {} else { move down done }
+                    if (op % 10 - 5) then {} else { move downleft done }
+                    move upleft done
+                  }
+                
+                  else if (op)
+                  then {
+                
+                    if (op % 10 - 1) then {} else {
+                      if (nearby up)
+                      then {
+                        cost = 10 ^ (nearby up % 100 + 1)
+                        if (Budget - cost) then shoot up cost else shoot up 10
+                      }
+                      else { move up }
+                      done
+                    }
+                
+                    if (op % 10 - 2) then {} else {
+                      if (nearby upright)
+                      then {
+                        cost = 10 ^ (nearby upright % 100 + 1)
+                        if (Budget - cost) then shoot upright cost else shoot upright 10
+                      }
+                      else { move upright }
+                      done
+                    }
+                
+                    if (op % 10 - 3) then {} else {
+                      if (nearby downright)
+                      then {
+                        cost = 10 ^ (nearby downright % 100 + 1)
+                        if (Budget - cost) then shoot downright cost else shoot downright 10
+                      }
+                      else { move downright }
+                      done
+                    }
+                
+                    if (op % 10 - 4) then {} else {
+                      if (nearby down)
+                      then {
+                        cost = 10 ^ (nearby down % 100 + 1)
+                        if (Budget - cost) then shoot down cost else shoot down 10
+                      }
+                      else { move down }
+                      done
+                    }
+                
+                    if (op % 10 - 5) then {} else {
+                      if (nearby downleft)
+                      then {
+                        cost = 10 ^ (nearby downleft % 100 + 1)
+                        if (Budget - cost) then shoot downleft cost else shoot downleft 10
+                      }
+                      else { move downleft }
+                      done
+                    }
+                
+                    if (nearby upleft)
+                    then {
+                      cost = 10 ^ (nearby upleft % 100 + 1)
+                      if (Budget - cost) then shoot upleft cost else shoot upleft 10
+                    }
+                    else { move upleft }
+                    done
+                  }
+                
+                  else {
+                
+                        try = 0
+                
+                    while (3 - try) {
+                
+                      dir = random % 6
+                
+                      if ((dir - 1) * (nearby up % 10 + 1) ^ 2) then {} else { move up done }
+                      if ((dir - 2) * (nearby upright % 10 + 1) ^ 2) then {} else { move upright done }
+                      if ((dir - 3) * (nearby downright % 10 + 1) ^ 2) then {} else { move downright done }
+                      if ((dir - 4) * (nearby down % 10 + 1) ^ 2) then {} else { move down done }
+                      if ((dir - 5) * (nearby downleft % 10 + 1) ^ 2) then {} else { move downleft done }
+                      if ((nearby upleft % 10 + 1) ^ 2) then { move upleft done } else {}
+                
+                      try = try + 1
+                    }
+                    r = r + 1
+                  }
+                }
+                """
         ));
 
+        // Guardian - High defense, shoots cost 15
+        baseTypes.add(new MinionType(
+                "Guardian",
+                8,
+                """
+                        
+                t = t + 1
+                r = 0
+                
+                while (3 - r) {
+                        
+                  op = opponent
+                
+                  if (op / 10 - 1)
+                  then {
+                
+                    if (op % 10 - 1) then {} else { move up done }
+                    if (op % 10 - 2) then {} else { move upright done }
+                    if (op % 10 - 3) then {} else { move downright done }
+                    if (op % 10 - 4) then {} else { move down done }
+                    if (op % 10 - 5) then {} else { move downleft done }
+                    move upleft done
+                  }
+                
+                  else if (op)
+                  then {
+                
+                    if (op % 10 - 1) then {} else { if (Budget - 15) then shoot up 15 else move up done }
+                    if (op % 10 - 2) then {} else { if (Budget - 15) then shoot upright 15 else move upright done }
+                    if (op % 10 - 3) then {} else { if (Budget - 15) then shoot downright 15 else move downright done }
+                    if (op % 10 - 4) then {} else { if (Budget - 15) then shoot down 15 else move down done }
+                    if (op % 10 - 5) then {} else { if (Budget - 15) then shoot downleft 15 else move downleft done }
+                
+                    if (Budget - 15) then shoot upleft 15 else move upleft done
+                  }
+                
+                  else {
+                
+                        try = 0
+                
+                    while (3 - try) {
+                
+                      dir = random % 6
+                
+                      if (dir - 1) then {} else { move up done }
+                      if (dir - 2) then {} else { move upright done }
+                      if (dir - 3) then {} else { move downright done }
+                      if (dir - 4) then {} else { move down done }
+                      if (dir - 5) then {} else { move downleft done }
+                      move upleft done
+                
+                      try = try + 1
+                    }
+                
+                    r = r + 1
+                  }
+                }
+                """
+        ));
+
+        // Warrior - Aggressive, shoots cost 30
+        baseTypes.add(new MinionType(
+                "Warrior",
+                5,
+                """
+                t = t + 1
+                
+                while (1) {
+                
+                  op = opponent
+                
+                  if (op / 10 - 1)
+                  then {
+                
+                    if (op % 10 - 1) then {} else { move up done }
+                    if (op % 10 - 2) then {} else { move upright done }
+                    if (op % 10 - 3) then {} else { move downright done }
+                    if (op % 10 - 4) then {} else { move down done }
+                    if (op % 10 - 5) then {} else { move downleft done }
+                    move upleft done
+                  }
+                
+                   else if (op)
+                  then {
+                
+                    if (op % 10 - 1) then {} else {
+                      if (nearby up)
+                      then { if (Budget - 30) then shoot up 30 else move up }
+                      else { move up }
+                      done
+                    }
+                
+                    if (op % 10 - 2) then {} else {
+                      if (nearby upright)
+                      then { if (Budget - 30) then shoot upright 30 else move upright }
+                      else { move upright }
+                      done
+                    }
+                
+                    if (op % 10 - 3) then {} else {
+                      if (nearby downright)
+                      then { if (Budget - 30) then shoot downright 30 else move downright }
+                      else { move downright }
+                      done
+                    }
+                
+                    if (op % 10 - 4) then {} else {
+                      if (nearby down)
+                      then { if (Budget - 30) then shoot down 30 else move down }
+                      else { move down }
+                      done
+                    }
+                
+                    if (op % 10 - 5) then {} else {
+                      if (nearby downleft)
+                      then { if (Budget - 30) then shoot downleft 30 else move downleft }
+                      else { move downleft }
+                      done
+                    }
+                
+                    if (nearby upleft)
+                    then { if (Budget - 30) then shoot upleft 30 else move upleft }
+                    else { move upleft }
+                    done
+                  }
+                
+                   else {
+                
+                    try = 0
+                
+                    while (3 - try) {
+                
+                      dir = random % 6
+                
+                      if (dir - 1) then {} else { move up done }
+                      if (dir - 2) then {} else { move upright done }
+                      if (dir - 3) then {} else { move downright done }
+                      if (dir - 4) then {} else { move down done }
+                      if (dir - 5) then {} else { move downleft done }
+                      move upleft done
+                
+                      try = try + 1
+                    }
+                  }
+                }
+                """
+        ));
+
+        // Scout - Fast movement, avoids enemies
         baseTypes.add(new MinionType(
                 "Scout",
                 1,
-                ScoutStrategy.SOURCE
+                """
+                m = 0
+                
+                while (3 - m) {
+                
+                  op = opponent
+                
+                  if (op)
+                  then {
+                
+                    if (op % 10 - 1) then {} else { move up done }
+                    if (op % 10 - 2) then {} else { move upright done }
+                    if (op % 10 - 3) then {} else { move downright done }
+                    if (op % 10 - 4) then {} else { move down done }
+                    if (op % 10 - 5) then {} else { move downleft done }
+                    move upleft done
+                  }
+                
+                  else {
+                
+                    try = 0
+                
+                    while (3 - try) {
+                
+                      dir = random % 6
+                
+                      if (dir - 1) then {} else { move up done }
+                      if (dir - 2) then {} else { move upright done }
+                      if (dir - 3) then {} else { move downright done }
+                      if (dir - 4) then {} else { move down done }
+                      if (dir - 5) then {} else { move downleft done }
+                      move upleft done
+                
+                      try = try + 1
+                    }
+                  }
+                
+                  m = m + 1
+                }
+                """
+        ));
+
+        // Mage - Balanced, random movement + shoots cost 10
+        baseTypes.add(new MinionType(
+                "Mage",
+                3,
+                """
+                t = t + 1
+                
+                while (1) {
+                
+                  op = opponent
+                
+                  if (op)
+                  then {
+                
+                    if (op % 10 - 1) then {} else { if (Budget - 10) then shoot up 10 else move up done }
+                    if (op % 10 - 2) then {} else { if (Budget - 10) then shoot upright 10 else move upright done }
+                    if (op % 10 - 3) then {} else { if (Budget - 10) then shoot downright 10 else move downright done }
+                    if (op % 10 - 4) then {} else { if (Budget - 10) then shoot down 10 else move down done }
+                    if (op % 10 - 5) then {} else { if (Budget - 10) then shoot downleft 10 else move downleft done }
+                
+                    if (Budget - 10) then shoot upleft 10 else move upleft done
+                  }
+                
+                   else {
+                
+                    try = 0
+                
+                    while (3 - try) {
+                
+                      dir = random % 6
+                
+                      if (dir - 1) then {} else { move up done }
+                      if (dir - 2) then {} else { move upright done }
+                      if (dir - 3) then {} else { move downright done }
+                      if (dir - 4) then {} else { move down done }
+                      if (dir - 5) then {} else { move downleft done }
+                      move upleft done
+                
+                      try = try + 1
+                    }
+                  }
+                }
+                """
         ));
     }
 
     // setup phase
-    public boolean initialSpawn(String typeName, int r, int c) {
+    // coordinates are (col, row) with 0-indexed values
+    public String getInitialSpawnError(String typeName, int c, int r) {
+        return getInitialSpawnErrorForPlayer(typeName, c, r, currentPlayer);
+    }
 
-        if (phase != Phase.SETUP) return false;
+    public String getInitialSpawnErrorForPlayer(String typeName, int c, int r, Player player) {
+        if (phase != Phase.SETUP) {
+            return "Invalid phase: " + phase + " (expected SETUP)";
+        }
 
-        Player p = currentPlayer;
+        Player p = player;
+        if (p == null) {
+            return "No player specified";
+        }
+
+        System.out.println("[initialSpawn] player=" + p.getId() + ", type=" + typeName + ", pos=" + c + "," + r);
+        System.out.println("[initialSpawn] Player available types: " +
+                p.getMinionTypes().stream().map(t -> t.getName()).toList());
 
         MinionType type = p.getTypeByName(typeName);
-        if (type == null) return false;
-        if (!p.isSpawnable(r, c)) return false;
-        if (!board.isEmpty(r, c)) return false;
+        if (type == null) {
+            return "Type '" + typeName + "' not found. Available: " + p.getMinionTypes().stream().map(MinionType::getName).toList();
+        }
+        if (!p.isSpawnable(c, r)) {
+            return "Hex (" + c + "," + r + ") not spawnable for player " + p.getId() + ". Spawnable: " + p.getSpawnableHexes();
+        }
+        if (!board.isEmpty(r, c)) {
+            return "Hex (" + c + "," + r + ") already occupied";
+        }
 
-        Minion m = new Minion(
-                r,
-                c,
-                (int) config.getInitHp(),
-                type,
-                p
-        );
+        return null;
+    }
+
+    public boolean initialSpawn(String typeName, int c, int r) {
+        return initialSpawnForPlayer(typeName, c, r, currentPlayer);
+    }
+
+
+    public boolean initialSpawnForPlayer(String typeName, int c, int r, Player targetPlayer) {
+        String error = getInitialSpawnErrorForPlayer(typeName, c, r, targetPlayer);
+        if (error != null) {
+            System.out.println("[initialSpawn] FAILED: " + error);
+            return false;
+        }
+
+        Player p = targetPlayer;
+        MinionType type = p.getTypeByName(typeName);
+
+        Minion m = new Minion(r, c, (int) config.getInitHp(), type, p, p.getNextMinionNumber());
 
         board.addMinion(m);
         p.addMinion(m);
+        turnLogs.addLog("P" + p.getId() + " spawned initial minion#" + m.getMinionNumber() + " at (" + c + "," + r + ")");
 
         if (p == player1) p1InitialSpawnDone = true;
         else p2InitialSpawnDone = true;
 
+        // ใน Duel Mode หากวางเสร็จแล้วให้สลับเทิร์นเพื่อให้คนถัดไปวาง
         switchTurn();
 
         if (p1InitialSpawnDone && p2InitialSpawnDone) {
             lockSetupPhase();
-            phase = Phase.RUNNING;
+            this.phase = Phase.RUNNING;
         }
-
         return true;
     }
-
     public void lockSetupPhase() {
         player1.lockSetup();
         player2.lockSetup();
@@ -206,22 +549,22 @@ public class GameState {
 
         // increment budget
         p.setBudget(p.getBudget() + config.getTurnBudget());
-
-        // increment turn
-//        p.incrementTurn();
+        turnLogs.addLog("P" + p.getId() + " +" + config.getTurnBudget() + " budget");
 
         double m = p.getBudget();
-//        long t = p.getTurnCount();
         long t = globalTurn;
 
         // interest calculator
-        if (m >= 1 && t >= 1) {
+        if (m >= 1 && t >= 2) {
 
             double b = config.getInterestPct();
             double r = b * Math.log10(m) * Math.log(t);
             double interest = m * r / 100.0;
 
             p.setBudget(p.getBudget() + interest);
+            if (interest > 0) {
+                turnLogs.addLog("P" + p.getId() + " +" + (int)interest + " interest");
+            }
         }
 
         // cap budget
@@ -231,77 +574,103 @@ public class GameState {
 
     }
 
-    // purchase hex
-    public boolean purchaseHex(int r, int c) {
+    // เพิ่ม Helper Method เพื่อเช็คว่าช่องนี้มีใครจองหรือยัง (รวมทั้ง 2 ฝั่ง)
+    private boolean isHexOwnedByAnyone(int c, int r) {
+        return player1.isSpawnable(c, r) || player2.isSpawnable(c, r);
+    }
+
+    // purchase hex - coordinates are (col, row) with 0-indexed values
+    public boolean purchaseHex(int c, int r) {
 
         if (phase != Phase.RUNNING) return false;
-        if (purchasedThisTurn) return false;   // buy 1 hex for 1 turn
+        if (purchasedThisTurn) return false;
         if (!board.inBounds(r, c)) return false;
 
         Player p = currentPlayer;
 
-        if (!isAdjacentToSpawnable(p, r, c)) return false;
+        if (isHexOwnedByAnyone(c, r)) return false; // ห้ามซื้อทับhexที่มีเจ้าของแล้ว
+        if (!isAdjacentToSpawnable(p, c, r)) return false;
         if (!board.isEmpty(r, c)) return false;
 
         long cost = config.getHexPurchaseCost();
         if (!p.spendBudget(cost)) return false;
 
-        p.addSpawnableHex(r, c);
-        purchasedThisTurn = true;    // mark : already bought
+        p.addSpawnableHex(c, r);
+        purchasedThisTurn = true;
+        turnLogs.addLog("P" + p.getId() + " purchased hex at (" + c + "," + r + ")");
         return true;
     }
 
-    // adjacent spawn able
-    private boolean isAdjacentToSpawnable(Player p, int r, int c) {
+    public String getPurchaseError(int c, int r) {
+        if (phase != Phase.RUNNING) return "Game is not running";
+        if (purchasedThisTurn) return "Already purchased a hex this turn";
+        if (!board.inBounds(r, c)) return "Hex is out of bounds";
 
-        int[][] dirs;
+        Player p = currentPlayer;
+        if (!isAdjacentToSpawnable(p, c, r)) return "Hex is not adjacent to your territory";
+        if (!board.isEmpty(r, c)) return "Hex is already occupied";
 
-        if (r % 2 == 0) {
-            // EVEN ROW
-            dirs = new int[][]{
-                    {-1, 0}, {-1, -1},
-                    {0, -1}, {0, 1},
-                    {1, 0}, {1, -1}
-            };
+        long cost = config.getHexPurchaseCost();
+        if (!p.spendBudget(cost)) return "Not enough gold (need " + cost + ")";
+
+        return "Unknown error";
+    }
+
+    // adjacent spawn able - coordinates are (col, row)
+    // Even-q offset: even columns are pushed down
+    private boolean isAdjacentToSpawnable(Player p, int c, int r) {
+
+        int[] dc, dr;
+
+        // Your custom hex grid
+        // Directions: E, W, N, S, NW, SE
+        if (c % 2 == 0) {
+            // EVEN COLUMN
+            dc = new int[]{+1, -1, 0, 0, -1, +1};
+            dr = new int[]{0, 0, -1, +1, +1, +1};
         } else {
-            // ODD ROW
-            dirs = new int[][]{
-                    {-1, 0}, {-1, 1},
-                    {0, -1}, {0, 1},
-                    {1, 0}, {1, 1}
-            };
+            // ODD COLUMN
+            dc = new int[]{+1, -1, 0, 0, -1, +1};
+            dr = new int[]{0, 0, -1, +1, -1, -1};
         }
 
-        for (int[] d : dirs) {
-            int nr = r + d[0];
-            int nc = c + d[1];
-            if (p.isSpawnable(nr, nc)) return true;
-        }
+        for (int i = 0; i < 6; i++) {
+            int nc = c + dc[i];
+            int nr = r + dr[i];
 
+            // ตรวจสอบ InBounds (row, col) ก่อนเสมอ
+            if (board.inBounds(nr, nc)) {
+                // เช็คว่าพิกัดนั้นเป็นของผู้เล่นคนนี้จริงๆ
+                if (p.isSpawnable(nc, nr)) return true;
+            }
+        }
         return false;
     }
 
-    // can purchase
-    public boolean canPurchase(int r, int c) {
 
-        if (!board.inBounds(r, c)) return false; // must be on the board
 
-        if (board.getMinion(r, c) != null) return false; // must not have minions.
+    // can purchase - coordinates are (col, row)
+    public boolean canPurchase(int c, int r) {
 
-        if (currentPlayer.isSpawnable(r, c)) return false; // must not be spawnable yet
+        if (!board.inBounds(r, c)) return false;
 
-        if (!isAdjacentToSpawnable(currentPlayer, r, c)) return false; // adjacent old spawnable
+        if (board.getMinion(r, c) != null) return false;
 
-        return currentPlayer.canPurchaseHex(); // must have enough money
+        // ห้ามซื้อถ้ามีเจ้าของแล้ว (เช็คทั้ง p1 และ p2)
+        if (isHexOwnedByAnyone(c, r)) return false;
+
+        if (!isAdjacentToSpawnable(currentPlayer, c, r)) return false;
+
+        return currentPlayer.canPurchaseHex();
     }
 
 
     //minion
 
-    // check spawn permission
-    public boolean canSpawnAt(Player p, int r, int c) {
+    // check spawn permission - coordinates are (col, row)
+    public boolean canSpawnAt(Player p, int c, int r) {
 
-        if (!p.isSpawnable(r, c)) return false;
+        if (!p.isSpawnable(c, r)) return false;
 
         if (!p.canSpawn()) return false;
 
@@ -312,8 +681,8 @@ public class GameState {
         return p.getBudget() >= config.getSpawnCost();
     }
 
-    public boolean canSpawn(int r, int c) {
-        return canSpawnAt(currentPlayer, r, c);
+    public boolean canSpawn(int c, int r) {
+        return canSpawnAt(currentPlayer, c, r);
     }
 
     public boolean selectMinionTypes(
@@ -346,6 +715,13 @@ public class GameState {
         return true;
     }
 
+    public boolean syncMinionTypesFromHost(List<String> selectedNames) {
+        if (phase != Phase.SETUP) return false;
+        selectMinionTypes(player1, selectedNames);
+        selectMinionTypes(player2, selectedNames);
+        return true;
+    }
+
     public boolean updateMinionType(
             Player player,
             String typeName,
@@ -354,30 +730,22 @@ public class GameState {
     ) {
         if (player == null) return false;
         if (phase != Phase.SETUP) return false;
-        
-        try {
-            Parser parser = new Parser(new Tokenizer(newStrategy));
-            parser.parseStrategy();
-        } catch (Exception e) {
-            System.out.println("Invalid strategy from UI: " + e.getMessage());
-            return false;
-        }
 
         MinionType oldType = player.getTypeByName(typeName);
         if (oldType == null) return false;
 
-        MinionType newType =
-                oldType.withConfig(newDefense, newStrategy);
+        MinionType newType = oldType.withConfig(newDefense, newStrategy);
 
         player.replaceMinionType(typeName, newType);
 
         return true;
     }
 
-    public boolean spawnMinion(String typeName, int r, int c) {
+    // coordinates are (col, row)
+    public boolean spawnMinion(String typeName, int c, int r) {
 
         if (phase != Phase.RUNNING) return false;
-        if (spawnedThisTurn) return false;   // 1 spawn for 1 turn
+        if (spawnedThisTurn) return false;
         if (!board.inBounds(r, c)) return false;
 
         Player p = currentPlayer;
@@ -391,7 +759,7 @@ public class GameState {
         if (type == null) return false;
 
         if (!p.canSpawn()) return false;
-        if (!p.isSpawnable(r, c)) return false;
+        if (!p.isSpawnable(c, r)) return false;
         if (!board.isEmpty(r, c)) return false;
 
         long cost = config.getSpawnCost();
@@ -402,12 +770,14 @@ public class GameState {
                 c,
                 (int) config.getInitHp(),
                 type,
-                p
+                p,
+                p.getNextMinionNumber()
         );
 
         board.addMinion(m);
         p.addMinion(m);
         p.incrementSpawnsUsed();
+        turnLogs.addLog("P" + p.getId() + " spawned minion#" + m.getMinionNumber() + " at (" + c + "," + r + ")");
 
         spawnedThisTurn = true;   // mark already spawn
         return true;
@@ -427,6 +797,7 @@ public class GameState {
             Minion m = it.next();
 
             if (!m.isAlive()) {
+                turnLogs.addLog("P" + p.getId() + " minion#" + m.getMinionNumber() + " died");
                 board.removeMinion(m);
                 it.remove();
             }
@@ -442,30 +813,58 @@ public class GameState {
 
             if (!m.isAlive()) continue;
 
-            evaluator.evaluate(m, this);
+            var result = evaluator.evaluate(m, this);
 
-            cleanupDeadMinions();
+            for (ActionLog log : result.getActions()) {
+                String desc = "P" + currentPlayer.getId() + " minion#" +
+                        m.getMinionNumber() + " " +
+                        log.getType() + " " +
+                        log.getDirection();
+                if (log.getValue() > 0) {
+                    desc += " " + log.getValue();
+                }
+                turnLogs.addLog(desc);
+
+                if (log.getType() == ActionLog.Type.SHOOT && log.hasCombatResult()) {
+                    String combatLog = "  -> Hit P" + log.getTargetPlayerId() + " minion#" +
+                            log.getTargetMinionNumber() + " for " +
+                            log.getDamageDealt() + " dmg (HP: " +
+                            log.getTargetHpAfter() + ")";
+                    if (log.isKilled()) {
+                        combatLog += " [KILLED]";
+                    }
+                    turnLogs.addLog(combatLog);
+                }
+            }
 
             if (isGameOver()) {
+                cleanupDeadMinions();
                 return;
             }
         }
+
+        cleanupDeadMinions();
     }
 
-    // turn
-    // use this to btn end turn (gameState.endTurn();)
+    // Round-Based Turn System:
+    // - A "round" = Player 1's turn + Player 2's turn
+    // - globalTurn represents the current round number (starts at 1)
+    // - completedTurns tracks finished rounds (for max turn limit)
+    // - Turn flow: P1 plays → P2 plays → Round complete → globalTurn++
     public void endTurn() {
         if (isGameOver()) {
             return;
         }
+        turnLogs.addSeparator();
         if (currentPlayer == player2) {
             globalTurn++;
-        }
-        if (currentPlayer == player2) {
             completedTurns++;
         }
-
         switchTurn();
+    }
+
+    public int getRoundNumber() {
+        return globalTurn;
     }
 
     // btn surrender
@@ -486,6 +885,10 @@ public class GameState {
         currentPlayer = (currentPlayer == player1)
                 ? player2
                 : player1;
+
+        // Reset purchase/spawn flags for the new current player
+        this.purchasedThisTurn = false;
+        this.spawnedThisTurn = false;
     }
 
     // end game
@@ -507,8 +910,6 @@ public class GameState {
         }
 
         // both reached max turns globalTurn
-//        if (player1.getTurnCount() >= config.getMaxTurns()
-//                && player2.getTurnCount() >= config.getMaxTurns()) {
         if (completedTurns  >= config.getMaxTurns() ){
             phase = Phase.FINISHED;
 
@@ -585,42 +986,20 @@ public class GameState {
 
         Player p = currentPlayer;
 
-        int mapSize = p.getSpawnableHexes().size();
-        double budget = p.getBudget();
-        double maxBudget = config.getMaxBudget();
+        // Simple 50/50 logic: flip coin to decide primary action
+        // Order: 1st buy hex, 2nd spawn minion
+        boolean buyHexFirst = random.nextBoolean();
 
-        boolean smallMap = mapSize < 8;
-        boolean aggressive = budget >= maxBudget * 0.8;
-        boolean enemyNearby = hasEnemyNearby(p);
-
-        // close opponent -> spawn
-        if (enemyNearby) {
-            if (trySpawn(p)) return;
-        }
-
-        // budget > 80% -> aggressive mode (spawn minion and buy)
-        if (aggressive) {
-            if (trySpawn(p)) return;
-            if (tryPurchase(p)) return;
-            return;
-        }
-
-        // small map -> buy hex
-        if (smallMap) {
-            if (tryPurchase(p)) return;
-            if (trySpawn(p)) return;
-            return;
-        }
-
-        // normal -> 50/50
-        boolean spawnFirst = random.nextBoolean();
-
-        if (spawnFirst) {
-            if (trySpawn(p)) return;
-            if (tryPurchase(p)) return;
+        if (buyHexFirst) {
+            // Try buy hex first, then spawn
+            if (!tryPurchase(p)) {
+                trySpawn(p);
+            }
         } else {
-            if (tryPurchase(p)) return;
-            if (trySpawn(p)) return;
+            // Try spawn first, then buy hex
+            if (!trySpawn(p)) {
+                tryPurchase(p);
+            }
         }
     }
 
@@ -628,22 +1007,29 @@ public class GameState {
 
         Player enemy = (p == player1) ? player2 : player1;
 
-        int[][] dirs = {
-                {-1, 0}, {1, 0},
-                {0, -1}, {0, 1},
-                {-1, 1}, {1, -1}
-        };
-
         for (String hex : p.getSpawnableHexes()) {
 
             String[] parts = hex.split(",");
-            int r = Integer.parseInt(parts[0]);
-            int c = Integer.parseInt(parts[1]);
+            int c = Integer.parseInt(parts[0]);
+            int r = Integer.parseInt(parts[1]);
 
-            for (int[] d : dirs) {
+            int[] dc, dr;
 
-                int nr = r + d[0];
-                int nc = c + d[1];
+            // Your custom hex grid
+            // Directions: E, W, N, S, NW, SE
+            if (c % 2 == 0) {
+                // EVEN COLUMN
+                dc = new int[]{+1, -1, 0, 0, -1, +1};
+                dr = new int[]{0, 0, -1, +1, +1, +1};
+            } else {
+                // ODD COLUMN
+                dc = new int[]{+1, -1, 0, 0, -1, +1};
+                dr = new int[]{0, 0, -1, +1, -1, -1};
+            }
+
+            for (int i = 0; i < 6; i++) {
+                int nc = c + dc[i];
+                int nr = r + dr[i];
 
                 if (!board.inBounds(nr, nc)) continue;
 
@@ -680,19 +1066,29 @@ public class GameState {
 
             String name = t.getName();
 
-            // have many budget -> tank
-            if (budget >= maxBudget * 0.8 && name.equalsIgnoreCase("Tank")) {
+            // have many budget -> Guardian (high defense)
+            if (budget >= maxBudget * 0.8 && name.equalsIgnoreCase("Guardian")) {
                 weight += 30;
             }
 
-            // closer opponet -> warrior
+            // closer opponent -> Warrior (aggressive)
             if (enemyNearby && name.equalsIgnoreCase("Warrior")) {
                 weight += 25;
             }
 
-            // large map -> Scout
+            // large map -> Scout (fast movement)
             if (mapSize > 12 && name.equalsIgnoreCase("Scout")) {
                 weight += 20;
+            }
+
+            // Archer for ranged attacks
+            if (enemyNearby && name.equalsIgnoreCase("Archer")) {
+                weight += 15;
+            }
+
+            // Mage for balanced play
+            if (name.equalsIgnoreCase("Mage")) {
+                weight += 10;
             }
 
             weights.add(weight);
@@ -702,14 +1098,14 @@ public class GameState {
         int totalWeight = 0;
         for (int w : weights) totalWeight += w;
 
-        int r = random.nextInt(totalWeight);
+        int randVal = random.nextInt(totalWeight);
 
         int chosenIndex = 0;
         int cumulative = 0;
 
         for (int i = 0; i < weights.size(); i++) {
             cumulative += weights.get(i);
-            if (r < cumulative) {
+            if (randVal < cumulative) {
                 chosenIndex = i;
                 break;
             }
@@ -717,72 +1113,308 @@ public class GameState {
 
         String typeName = types.get(chosenIndex).getName();
 
-        // random position
-        List<String> hexes = new ArrayList<>(p.getSpawnableHexes());
-        java.util.Collections.shuffle(hexes);
+        // Find best position: backline toward enemy, avoid stacking
+        List<String> candidates = getBacklinePositions(p);
 
-        for (String hex : hexes) {
+        if (candidates.isEmpty()) {
+            // Fallback: any valid spawnable hex that's not adjacent to own minion
+            candidates = getUnstackedSpawnableHexes(p);
+        }
 
+        if (candidates.isEmpty()) {
+            return false;
+        }
+
+        // Pick random from best candidates
+        String chosenHex = candidates.get(random.nextInt(candidates.size()));
+        String[] parts = chosenHex.split(",");
+        int col = Integer.parseInt(parts[0]);
+        int row = Integer.parseInt(parts[1]);
+
+        return spawnMinion(typeName, col, row);
+    }
+
+    // Get spawnable hexes that are behind our frontline (backline), toward enemy
+    private List<String> getBacklinePositions(Player p) {
+        List<String> result = new ArrayList<>();
+
+        // Find our frontline (hexes with friendly minions that are closest to enemy)
+        int[] frontlineDist = findFrontlineDistance(p);
+
+        for (String hex : p.getSpawnableHexes()) {
             String[] parts = hex.split(",");
-            int row = Integer.parseInt(parts[0]);
-            int col = Integer.parseInt(parts[1]);
+            int c = Integer.parseInt(parts[0]);
+            int r = Integer.parseInt(parts[1]);
 
-            if (board.isEmpty(row, col)) {
-                return spawnMinion(typeName, row, col);
+            if (!board.isEmpty(r, c)) continue; // Must be empty
+
+            // Check if this hex is NOT adjacent to any friendly minion (backline)
+            if (hasAdjacentFriendlyMinion(c, r, p)) continue;
+
+            // Score based on distance to enemy (closer = better for aggressive spawn)
+            int distToEnemy = estimateDistanceToEnemy(c, r, p);
+
+            // Only consider hexes that are at or behind the frontline
+            if (distToEnemy <= frontlineDist[0] + 2) {
+                result.add(hex);
+            }
+        }
+
+        return result;
+    }
+
+    // Get spawnable hexes that are not adjacent to own minions
+    private List<String> getUnstackedSpawnableHexes(Player p) {
+        List<String> result = new ArrayList<>();
+
+        for (String hex : p.getSpawnableHexes()) {
+            String[] parts = hex.split(",");
+            int c = Integer.parseInt(parts[0]);
+            int r = Integer.parseInt(parts[1]);
+
+            if (!board.isEmpty(r, c)) continue;
+            if (hasAdjacentFriendlyMinion(c, r, p)) continue;
+
+            result.add(hex);
+        }
+
+        // If still empty, allow any valid spawn
+        if (result.isEmpty()) {
+            for (String hex : p.getSpawnableHexes()) {
+                String[] parts = hex.split(",");
+                int c = Integer.parseInt(parts[0]);
+                int r = Integer.parseInt(parts[1]);
+                if (board.isEmpty(r, c)) {
+                    result.add(hex);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    // Check if hex has any adjacent friendly minion
+    private boolean hasAdjacentFriendlyMinion(int c, int r, Player p) {
+        int[] dc = {+1, -1, 0, 0, -1, +1};
+        int[] dr;
+
+        if (c % 2 == 0) {
+            dr = new int[]{0, 0, -1, +1, +1, +1};
+        } else {
+            dr = new int[]{0, 0, -1, +1, -1, -1};
+        }
+
+        for (int i = 0; i < 6; i++) {
+            int nc = c + dc[i];
+            int nr = r + dr[i];
+
+            if (!board.inBounds(nr, nc)) continue;
+
+            Minion m = board.getMinion(nr, nc);
+            if (m != null && m.getOwner() == p) {
+                return true;
             }
         }
 
         return false;
     }
 
+    // Find the frontline distance (closest friendly minion to enemy)
+    private int[] findFrontlineDistance(Player p) {
+        int minDist = Integer.MAX_VALUE;
+
+        for (Minion m : p.getMinions()) {
+            int dist = estimateDistanceToEnemy(m.getCol(), m.getRow(), p);
+            if (dist < minDist) {
+                minDist = dist;
+            }
+        }
+
+        // If no minions, return a large value (spawn anywhere)
+        if (minDist == Integer.MAX_VALUE) {
+            minDist = 20;
+        }
+
+        return new int[]{minDist};
+    }
+
+    // Estimate distance from a hex to nearest enemy minion
+    private int estimateDistanceToEnemy(int c, int r, Player p) {
+        Player enemy = (p == player1) ? player2 : player1;
+        int minDist = Integer.MAX_VALUE;
+
+        for (Minion m : enemy.getMinions()) {
+            int dist = Math.abs(c - m.getCol()) + Math.abs(r - m.getRow());
+            if (dist < minDist) {
+                minDist = dist;
+            }
+        }
+
+        // If no enemies, return large value
+        if (minDist == Integer.MAX_VALUE) {
+            minDist = 50;
+        }
+
+        return minDist;
+    }
+
     private boolean tryPurchase(Player p) {
 
-        if (!p.canPurchaseHex()) return false;
+        if (!p.canPurchaseHex()) {
+            return false;
+        }
 
-        for (int r = 1; r <= 8; r++) {
-            for (int c = 1; c <= 8; c++) {
+        // Find all adjacent empty hexes and score them
+        List<int[]> candidates = new ArrayList<>();
 
-                if (canPurchase(r, c)) {
-                    return purchaseHex(r, c);
-                }
+        // 0-indexed: 0-7
+        for (int c = 0; c < 8; c++) {
+            for (int r = 0; r < 8; r++) {
+                if (!board.inBounds(r, c)) continue;
+                if (p.isSpawnable(c, r)) continue;  // Already owned
+                if (!board.isEmpty(r, c)) continue;  // Has minion
+                if (!isAdjacentToSpawnable(p, c, r)) continue;  // Must be adjacent to owned
+
+                // Score this hex
+                int score = scorePurchaseHex(c, r, p);
+                candidates.add(new int[]{c, r, score});
+            }
+        }
+
+        if (candidates.isEmpty()) {
+            return false;
+        }
+
+        // Sort by score (higher = better)
+        candidates.sort((a, b) -> Integer.compare(b[2], a[2]));
+
+        // Try to purchase the best hex
+        for (int[] candidate : candidates) {
+            int c = candidate[0];
+            int r = candidate[1];
+
+            if (purchaseHex(c, r)) {
+                return true;
             }
         }
 
         return false;
+    }
+
+    // Score a potential purchase hex (higher = better)
+    private int scorePurchaseHex(int c, int r, Player p) {
+        int score = 0;
+
+        // Distance to center (prefer center for strategic control)
+        double centerDist = Math.sqrt(Math.pow(c - 3.5, 2) + Math.pow(r - 3.5, 2));
+        score += (int)(10 - centerDist); // Closer to center = higher score
+
+        // Distance to nearest enemy (prefer expanding toward enemy)
+        Player enemy = (p == player1) ? player2 : player1;
+        int minEnemyDist = Integer.MAX_VALUE;
+        for (Minion m : enemy.getMinions()) {
+            int dist = Math.abs(c - m.getCol()) + Math.abs(r - m.getRow());
+            minEnemyDist = Math.min(minEnemyDist, dist);
+        }
+        if (minEnemyDist < Integer.MAX_VALUE) {
+            score += (10 - minEnemyDist); // Closer to enemy = higher score
+        }
+
+        // Bonus for flanking enemy spawn area
+        if (enemy.getSpawnableHexes().isEmpty()) {
+            // Enemy has no more spawnable hexes - corner them!
+            score += 20;
+        }
+
+        // Avoid hexes that would isolate our territory (prefer expansion along edges)
+        int ownAdjacent = countAdjacentOwnedHexes(c, r, p);
+        if (ownAdjacent >= 2) {
+            score += 5; // Good expansion point
+        }
+
+        return score;
+    }
+
+    // Count how many adjacent hexes are owned by player
+    private int countAdjacentOwnedHexes(int c, int r, Player p) {
+        int count = 0;
+        int[] dc = {+1, -1, 0, 0, -1, +1};
+        int[] dr;
+
+        if (c % 2 == 0) {
+            dr = new int[]{0, 0, -1, +1, +1, +1};
+        } else {
+            dr = new int[]{0, 0, -1, +1, -1, -1};
+        }
+
+        for (int i = 0; i < 6; i++) {
+            int nc = c + dc[i];
+            int nr = r + dr[i];
+
+            if (!board.inBounds(nr, nc)) continue;
+            if (p.isSpawnable(nc, nr)) {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     public void botInitialSpawn() {
 
         Player p = getCurrentPlayer();
 
-        // random type
         List<MinionType> types = p.getMinionTypes();
+
+        if (types.isEmpty()) {
+            return;
+        }
+
         MinionType type = types.get(new Random().nextInt(types.size()));
 
-        // find spawnable hex must be free
-        for (int r = 1; r <= 8; r++) {
-            for (int c = 1; c <= 8; c++) {
-                if (canSpawnInitial(r, c)) {
-                    initialSpawn(type.getName(), r, c);
-                    return;
-                }
+        // Find spawnable hexes sorted by distance to center (strategic position)
+        List<String> spawnable = new ArrayList<>(p.getSpawnableHexes());
+
+        // Calculate center of board (3.5, 3.5 for 0-7 board)
+        double centerC = 3.5;
+        double centerR = 3.5;
+
+        // Sort by distance to center (closest first = more strategic)
+        spawnable.sort((a, b) -> {
+            String[] partsA = a.split(",");
+            String[] partsB = b.split(",");
+            double distA = Math.sqrt(Math.pow(Double.parseDouble(partsA[0]) - centerC, 2)
+                    + Math.pow(Double.parseDouble(partsA[1]) - centerR, 2));
+            double distB = Math.sqrt(Math.pow(Double.parseDouble(partsB[0]) - centerC, 2)
+                    + Math.pow(Double.parseDouble(partsB[1]) - centerR, 2));
+            return Double.compare(distA, distB);
+        });
+
+        // Spawn at the most central valid hex
+        for (String hex : spawnable) {
+            String[] parts = hex.split(",");
+            int c = Integer.parseInt(parts[0]);
+            int r = Integer.parseInt(parts[1]);
+
+            if (canSpawnInitial(c, r)) {
+                initialSpawn(type.getName(), c, r);
+                return;
             }
         }
     }
 
-    public boolean canSpawnInitial(int r, int c) {
+    // coordinates are (col, row) with 0-indexed values
+    public boolean canSpawnInitial(int c, int r) {
 
         if (phase != Phase.SETUP) return false;
 
-        if (!board.inBounds(r, c)) return false;
+        if (!board.inBounds(c, r)) return false;
 
         Player p = currentPlayer;
 
-        // be spawnable zone of player
-        if (!p.isSpawnable(r, c)) return false;
+        if (!p.isSpawnable(c, r)) return false;
 
-        // must be free
-        if (!board.isEmpty(r, c)) return false;
+        if (!board.isEmpty(c, r)) return false;
 
         return true;
     }
@@ -791,17 +1423,31 @@ public class GameState {
     public TurnSummary playTurn() {
 
         TurnSummary summary = new TurnSummary();
+        System.out.println("[DEBUG] playTurn() - phase=" + phase + ", currentPlayer=" + currentPlayer.getId() + ", isBot=" + currentPlayer.isBot() + ", minions=" + currentPlayer.getMinions().size());
 
-        startTurn();
-
-        if (currentPlayer.isBot()) {
-            botTurnAction();
+        if (phase == Phase.SETUP) {
+            if (currentPlayer.isBot() && currentPlayer.getMinions().isEmpty()) {
+                System.out.println("[DEBUG] Bot spawning initial minion...");
+                botInitialSpawn();
+            } else {
+                System.out.println("[DEBUG] Human ending turn, switching...");
+                endTurn();
+            }
+            return summary;
         }
 
-        executeMinions();
+        if (phase == Phase.RUNNING) {
+            startTurn();
 
-        if (phase != Phase.FINISHED) {
-            endTurn();
+            if (currentPlayer.isBot()) {
+                botTurnAction();
+            }
+
+            executeMinions();
+
+            if (phase != Phase.FINISHED) {
+                endTurn();
+            }
         }
 
         return summary;

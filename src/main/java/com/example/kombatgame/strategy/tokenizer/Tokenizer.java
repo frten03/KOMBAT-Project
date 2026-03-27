@@ -48,12 +48,7 @@ public class Tokenizer {
                 return new Token(TokenType.POW, "^");
 
             case '=':
-                if (pos < src.length() && src.charAt(pos) == '=') {
-                    pos++;
-                    return new Token(TokenType.EQ, "==");
-                }
                 return new Token(TokenType.ASSIGN, "=");
-                //throw new RuntimeException("Single '=' not allowed");
 
             case '(':
                 return new Token(TokenType.LPAREN, "(");

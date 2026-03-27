@@ -7,7 +7,7 @@ import java.util.*;
 
 public class TerminalGame {
 
-    private static final int SIZE = 8;
+    private static final int SIZE = 7;
 
     public static void main(String[] args) {
 
@@ -147,7 +147,6 @@ public class TerminalGame {
             if (!defenseInput.isBlank()) {
                 try {
                     int newDefense = Integer.parseInt(defenseInput);
-
                     if (newDefense < 0) {
                         System.out.println("Defense cannot be negative. Using default.");
                     } else {
@@ -303,7 +302,7 @@ public class TerminalGame {
 
             System.out.println("\n----------------------------------");
             System.out.println("global Turn: " + game.getGlobalTurn());
-            System.out.println("Player Turn: " + p.getTurnCount());
+//            System.out.println("Player Turn: " + p.getTurnCount());
             System.out.println(currentPlayerName(game));
             System.out.println("HP: " + p.sumHP());
             System.out.println("Budget: " + p.getBudget());
@@ -460,12 +459,12 @@ public class TerminalGame {
 
         // column header
         System.out.print("     ");
-        for (int c = 1; c <= SIZE; c++) {
+        for (int c = 0; c <= SIZE; c++) {
             System.out.printf("%-8d", c);
         }
         System.out.println();
 
-        for (int r = 1; r <= SIZE; r++) {
+        for (int r = 0; r <= SIZE; r++) {
 
             if (r % 2 == 0) System.out.print("   ");
             else System.out.print(" ");

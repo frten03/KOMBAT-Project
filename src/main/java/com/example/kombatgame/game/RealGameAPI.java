@@ -2,12 +2,15 @@ package com.example.kombatgame.game;
 
 import com.example.kombatgame.strategy.ast.Direction;
 import com.example.kombatgame.strategy.eval.GameAPI;
+import lombok.Getter;
 
 public class RealGameAPI implements GameAPI {
 
     private final GameLogic logic;
     private final Minion self;
     private boolean done = false;
+    @Getter
+    private GameLogic.ShootResult lastShootResult;
 
     public RealGameAPI(GameLogic logic, Minion self) {
         this.logic = logic;
@@ -29,7 +32,7 @@ public class RealGameAPI implements GameAPI {
     @Override
     public void shoot(Direction dir, long cost) {
         if (done) return;
-        logic.shoot(self, dir, cost);
+        lastShootResult = logic.shoot(self, dir, cost);
     }
 
     @Override
@@ -72,10 +75,10 @@ public class RealGameAPI implements GameAPI {
                 .getSpawnsLeft();
     }
 
-    private final java.util.Random random = new java.util.Random();
+    private static final java.util.SplittableRandom RANDOM = new java.util.SplittableRandom();
     @Override
     public long getRandom() {
-        return random.nextInt(1000);
+        return RANDOM.nextInt(1000);
     }
 
     @Override

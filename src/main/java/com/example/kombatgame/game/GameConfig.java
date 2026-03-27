@@ -1,5 +1,8 @@
 package com.example.kombatgame.game;
 
+import lombok.Getter;
+
+@Getter
 public class GameConfig {
 
     private final long spawnCost;
@@ -33,32 +36,4 @@ public class GameConfig {
         this.maxSpawns = maxSpawns;
     }
 
-    // getter UI
-    public long getSpawnCost() {
-        return spawnCost;
-    }
-    public long getHexPurchaseCost() {
-        return hexPurchaseCost;
-    }
-    public long getInitBudget() {
-        return initBudget;
-    }
-    public long getInitHp() {
-        return initHp;
-    }
-    public long getTurnBudget() {
-        return turnBudget;
-    }
-    public long getMaxBudget() {
-        return maxBudget;
-    }
-    public long getInterestPct() {
-        return interestPct;
-    }
-    public long getMaxTurns() {
-        return maxTurns;
-    }
-    public long getMaxSpawns() {
-        return maxSpawns;
-    }
 }

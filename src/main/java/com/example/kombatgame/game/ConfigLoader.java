@@ -2,6 +2,7 @@ package com.example.kombatgame.game;
 
 import java.io.*;
 import java.util.*;
+import java.net.URL;
 
 // Check Config file → ConfigLoader → GameConfig → GameState
 public class ConfigLoader {
@@ -18,16 +19,21 @@ public class ConfigLoader {
             "max_spawns"
     );
 
-    public static GameConfig load(String path) throws IOException {
-
+    public static GameConfig load(String filename) throws IOException {
         Map<String, Long> values = new HashMap<>();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+        InputStream is = null;
+        BufferedReader reader = null;
+
+        try {
+            is = ConfigLoader.class.getClassLoader().getResourceAsStream(filename);
+            if (is == null) {
+                is = new FileInputStream(filename);
+            }
+            reader = new BufferedReader(new InputStreamReader(is));
 
             String line;
-
             while ((line = reader.readLine()) != null) {
-
                 line = line.trim();
                 if (line.isEmpty()) continue;
 
@@ -40,30 +46,15 @@ public class ConfigLoader {
                 String valueStr = parts[1].trim();
 
                 if (!REQUIRED_KEYS.contains(name)) {
-                    throw new IllegalArgumentException("Unknown config key: " + name);
+                    continue;
                 }
 
-                long value;
-                try {
-                    value = Long.parseLong(valueStr);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Config value must be a number: " + name);
-                }
-
-                if (value < 0) {
-                    throw new IllegalArgumentException("Config value cannot be negative: " + name);
-                }
-
-                if ((name.equals("init_hp") ||
-                        name.equals("max_budget") ||
-                        name.equals("max_turns") ||
-                        name.equals("interest_pct")) && value == 0) {
-
-                    throw new IllegalArgumentException(name + " must be greater than 0");
-                }
-
+                long value = Long.parseLong(valueStr);
                 values.put(name, value);
             }
+        } finally {
+            if (reader != null) reader.close();
+            if (is != null) is.close();
         }
 
         // check config have all key

@@ -1,5 +1,7 @@
 package com.example.kombatgame.strategy.ast.stmt;
 
+import com.example.kombatgame.game.GameLogic;
+import com.example.kombatgame.game.RealGameAPI;
 import com.example.kombatgame.strategy.ast.Direction;
 import com.example.kombatgame.strategy.ast.core.Expression;
 import com.example.kombatgame.strategy.eval.ActionLog;
@@ -30,8 +32,24 @@ public class ShootStmt extends ActionStmt {
 
         ctx.api.shoot(dir, c);
 
-        ctx.getResult().addAction(
-                new ActionLog(ActionLog.Type.SHOOT, dir, c)
-        );
+        Object rawResult = ctx.api.getLastShootResult();
+        if (rawResult instanceof GameLogic.ShootResult shootResult && shootResult.hit) {
+            ctx.getResult().addAction(
+                    new ActionLog(
+                            ActionLog.Type.SHOOT,
+                            dir,
+                            c,
+                            shootResult.target.getOwner().getId(),
+                            shootResult.target.getMinionNumber(),
+                            shootResult.damageDealt,
+                            shootResult.targetHpAfter,
+                            shootResult.killed
+                    )
+            );
+        } else {
+            ctx.getResult().addAction(
+                    new ActionLog(ActionLog.Type.SHOOT, dir, c)
+            );
+        }
     }
 }
