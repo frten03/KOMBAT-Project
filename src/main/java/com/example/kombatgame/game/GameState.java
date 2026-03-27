@@ -9,6 +9,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Collections;
 
 public class GameState {
 
@@ -29,7 +31,7 @@ public class GameState {
     private final GameMode mode;
 
     @Getter
-    private List<MinionType> baseTypes;
+    private List<MinionType> baseTypes = new CopyOnWriteArrayList<>();
 
     private final Random random = new Random();
 
@@ -790,18 +792,14 @@ public class GameState {
     }
 
     private void removeDeadFromPlayer(Player p) {
-
-        Iterator<Minion> it = p.getMinions().iterator();
-
-        while (it.hasNext()) {
-            Minion m = it.next();
-
+        p.getMinions().removeIf(m -> {
             if (!m.isAlive()) {
                 turnLogs.addLog("P" + p.getId() + " minion#" + m.getMinionNumber() + " died");
                 board.removeMinion(m);
-                it.remove();
+                return true;
             }
-        }
+            return false;
+        });
     }
 
     // execution
@@ -869,16 +867,22 @@ public class GameState {
 
     // btn surrender
     public void surrender() {
+        lock.writeLock().lock();
+        try {
+            if (phase == Phase.FINISHED) return;
 
-        if (phase == Phase.FINISHED) return;
+            Player loser = this.currentPlayer;
+            Player winner = (loser == player1) ? player2 : player1;
 
-        Player loser = currentPlayer;
-        Player winner = (loser == player1) ? player2 : player1;
+            System.out.println("[SURRENDER] CurrentPlayer ID: " + loser.getId()); // Debug ดูใน Console
 
-        gameOverReason = "Player " + loser.getId() + " surrendered. Player "
-                + winner.getId() + " wins.";
+            this.gameOverReason = "Player " + loser.getId() + " surrendered. Player "
+                    + winner.getId() + " wins.";
 
-        phase = Phase.FINISHED;
+            this.phase = Phase.FINISHED;
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     private void switchTurn() {
@@ -893,92 +897,65 @@ public class GameState {
 
     // end game
     public boolean isGameOver() {
+        lock.writeLock().lock();
+        try {
+            if (phase == Phase.FINISHED) return true;
 
-        if (phase == Phase.FINISHED) return true;
+            boolean p1HasMinions = !player1.getMinions().isEmpty();
+            boolean p2HasMinions = !player2.getMinions().isEmpty();
 
-        // one player has no minions
-        if (player1.hasNoMinions() && !player2.hasNoMinions()) {
-            gameOverReason = "Player 1 has no minions left.";
-            phase = Phase.FINISHED;
-            return true;
-        }
-
-        if (player2.hasNoMinions() && !player1.hasNoMinions()) {
-            gameOverReason = "Player 2 has no minions left.";
-            phase = Phase.FINISHED;
-            return true;
-        }
-
-        // both reached max turns globalTurn
-        if (completedTurns  >= config.getMaxTurns() ){
-            phase = Phase.FINISHED;
-
-            int m1 = player1.getMinions().size();
-            int m2 = player2.getMinions().size();
-
-            if (m1 > m2) {
-                gameOverReason = "Maximum turns reached. Player 1 has more minions.";
-            } else if (m2 > m1) {
-                gameOverReason = "Maximum turns reached. Player 2 has more minions.";
-            } else {
-                long hp1 = player1.sumHP();
-                long hp2 = player2.sumHP();
-
-                if (hp1 > hp2) {
-                    gameOverReason = "Maximum turns reached. Equal minions. Player 1 has higher total HP.";
-                } else if (hp2 > hp1) {
-                    gameOverReason = "Maximum turns reached. Equal minions. Player 2 has higher total HP.";
+            if (!p1HasMinions || !p2HasMinions) {
+                phase = Phase.FINISHED;
+                if (!p1HasMinions && p2HasMinions) {
+                    gameOverReason = "Player 1's army was defeated. Player 2 wins!";
+                } else if (!p2HasMinions && p1HasMinions) {
+                    gameOverReason = "Player 2's army was defeated. Player 1 wins!";
                 } else {
-                    if (player1.getBudget() > player2.getBudget()) {
-                        gameOverReason = "Maximum turns reached. Equal HP. Player 1 has higher budget.";
-                    } else if (player2.getBudget() > player1.getBudget()) {
-                        gameOverReason = "Maximum turns reached. Equal HP. Player 2 has higher budget.";
-                    } else {
-                        gameOverReason = "Maximum turns reached. Completely tied.";
-                    }
+                    gameOverReason = "Both armies were wiped out. It's a draw!";
                 }
+                return true;
             }
 
-            return true;
+            if (completedTurns >= config.getMaxTurns()) {
+                phase = Phase.FINISHED;
+                Player winner = internalDetermineWinner(); // ใช้ Helper ภายใน
+                if (winner == null) {
+                    gameOverReason = "Maximum turns reached. It's a tie!";
+                } else {
+                    gameOverReason = "Maximum turns reached. Player " + winner.getId() + " wins by score!";
+                }
+                return true;
+            }
+
+            return false;
+        } finally {
+            lock.writeLock().unlock();
         }
+    }
 
+    //Helper Method
+    private Player internalDetermineWinner() {
+        int m1 = player1.getMinions().size();
+        int m2 = player2.getMinions().size();
+        if (m1 != m2) return (m1 > m2) ? player1 : player2;
 
-        return false;
+        long hp1 = player1.sumHP();
+        long hp2 = player2.sumHP();
+        if (hp1 != hp2) return (hp1 > hp2) ? player1 : player2;
+
+        if (player1.getBudget() != player2.getBudget())
+            return (player1.getBudget() > player2.getBudget()) ? player1 : player2;
+
+        return null;
     }
 
     public Player determineWinner() {
-
-        // if one side eliminated
-        if (player1.hasNoMinions() && !player2.hasNoMinions())
-            return player2;
-
-        if (player2.hasNoMinions() && !player1.hasNoMinions())
-            return player1;
-
-        // compare number of minions
-        int m1 = player1.getMinions().size();
-        int m2 = player2.getMinions().size();
-
-        if (m1 != m2) {
-            return (m1 > m2) ? player1 : player2;
+        lock.readLock().lock();
+        try {
+            return internalDetermineWinner();
+        } finally {
+            lock.readLock().unlock();
         }
-
-        // compare total HP
-        long hp1 = player1.sumHP();
-        long hp2 = player2.sumHP();
-
-        if (hp1 != hp2) {
-            return (hp1 > hp2) ? player1 : player2;
-        }
-
-        // compare remaining budget
-        if (player1.getBudget() != player2.getBudget()) {
-            return (player1.getBudget() > player2.getBudget())
-                    ? player1
-                    : player2;
-        }
-
-        return null; // tie
     }
 
     // bot
@@ -1421,35 +1398,42 @@ public class GameState {
 
     // getter UI
     public TurnSummary playTurn() {
+        // 1. ใช้ Write Lock เพราะเมธอดนี้มีการเปลี่ยนแปลงสถานะเกม (Mutable operations)
+        lock.writeLock().lock();
+        try {
+            TurnSummary summary = new TurnSummary();
+            System.out.println("[DEBUG] playTurn() - phase=" + phase + ", currentPlayer=" + currentPlayer.getId() +
+                    ", isBot=" + currentPlayer.isBot() + ", minions=" + currentPlayer.getMinions().size());
 
-        TurnSummary summary = new TurnSummary();
-        System.out.println("[DEBUG] playTurn() - phase=" + phase + ", currentPlayer=" + currentPlayer.getId() + ", isBot=" + currentPlayer.isBot() + ", minions=" + currentPlayer.getMinions().size());
-
-        if (phase == Phase.SETUP) {
-            if (currentPlayer.isBot() && currentPlayer.getMinions().isEmpty()) {
-                System.out.println("[DEBUG] Bot spawning initial minion...");
-                botInitialSpawn();
-            } else {
-                System.out.println("[DEBUG] Human ending turn, switching...");
-                endTurn();
+            if (phase == Phase.SETUP) {
+                if (currentPlayer.isBot() && currentPlayer.getMinions().isEmpty()) {
+                    System.out.println("[DEBUG] Bot spawning initial minion...");
+                    botInitialSpawn();
+                } else {
+                    System.out.println("[DEBUG] Human ending turn, switching...");
+                    switchTurn(); // ใช้ switchTurn โดยตรงเพื่อความชัดเจนในขั้นตอน Setup
+                }
+                return summary;
             }
+
+            if (phase == Phase.RUNNING) {
+                startTurn();
+
+                if (currentPlayer.isBot()) {
+                    botTurnAction();
+                }
+
+                executeMinions();
+
+                if (phase != Phase.FINISHED) {
+                    endTurn();
+                }
+            }
+
             return summary;
+        } finally {
+            // 2. ปลด Lock เสมอใน block finally เพื่อป้องกัน Deadlock หากเกิด Runtime Error ข้างใน
+            lock.writeLock().unlock();
         }
-
-        if (phase == Phase.RUNNING) {
-            startTurn();
-
-            if (currentPlayer.isBot()) {
-                botTurnAction();
-            }
-
-            executeMinions();
-
-            if (phase != Phase.FINISHED) {
-                endTurn();
-            }
-        }
-
-        return summary;
     }
 }

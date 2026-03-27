@@ -3,10 +3,9 @@ package com.example.kombatgame.game;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Player {
     @Getter
@@ -22,11 +21,13 @@ public class Player {
     private long spawnsUsed = 0;
     private int minionCounter = 0;
     @Getter
-    private Set<String> spawnableHexes = new HashSet<>();
+    private Set<String> spawnableHexes = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+
     @Getter
-    private final List<Minion> minions = new ArrayList<>();
+    private final List<Minion> minions = new CopyOnWriteArrayList<>();
+
     @Getter
-    private List<MinionType> minionTypes = new ArrayList<>();
+    private List<MinionType> minionTypes = new CopyOnWriteArrayList<>();
     private boolean setupLocked = false;
 
     public Player(int id, GameConfig config) {
