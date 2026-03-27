@@ -1,0 +1,30 @@
+.room-page {
+    position: relative;
+    height: 100vh;
+}
+.room-back {
+    position: absolute;
+    top: 40px;
+    left: 40px;
+}
+
+/* ===== Center section ===== */
+.room-center {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+}
+
+.btn.room {
+    background-color: var(--btn-room);
+    color: #FFFFFF;
+}
+
+.btn.join {
+    background-color: #FFFFFF;
+    color: var(--btn-room);
+    border: 3px dashed var(--btn-room);
+}
